@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  database:
+    image: postgres:15-alpine
+    container_name: medimate_db
+    environment:
+      POSTGRES_DB: medimate
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - medimate_network
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: medimate_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - medimate_network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: medimate_api
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://dev:devpass@database:5432/medimate
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=dev_secret_key
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - database
+      - redis
+    networks:
+      - medimate_network
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: medimate_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001
+      - CHOKIDAR_USEPOLLING=true
+      - FAST_REFRESH=true
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - medimate_network
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: medimate_proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - medimate_network
+
+volumes:
+  postgres_data:
+
+networks:
+  medimate_network:
+    driver: bridge
