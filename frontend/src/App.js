@@ -21,11 +21,10 @@ function App() {
 
   // Simple view switcher - replace with proper routing later
   const renderCurrentView = () => {
-    switch(currentView) {
+    switch (currentView) {
       case 'dashboard': return <Dashboard />
       case 'medications': return <Medications />
       case 'reminders': return <Reminders />
-      case 'add-medication': return <AddMedication />
       case 'profile': return <Profile />
       case 'settings': return <Settings />
       case 'calendar': return <Calendar />
@@ -35,7 +34,6 @@ function App() {
       case 'reminder-history': return <ReminderHistory />
       case 'dose-tracker': return <DoseTracker />
       case 'reports': return <Reports />
-      case 'emergency': return <Emergency />
       case 'help': return <Help />
       default: return <Dashboard />
     }
@@ -51,51 +49,45 @@ function App() {
               MediMate
             </h1>
             <nav className="hidden md:flex space-x-6">
-              <button 
+              <button
                 onClick={() => setCurrentView('dashboard')}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${
-                  currentView === 'dashboard' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
-                }`}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${currentView === 'dashboard' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
+                  }`}
               >
                 Dashboard
               </button>
-              <button 
+              <button
                 onClick={() => setCurrentView('medications')}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${
-                  currentView === 'medications' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
-                }`}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${currentView === 'medications' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
+                  }`}
               >
                 Medications
               </button>
-              <button 
+              <button
                 onClick={() => setCurrentView('reminders')}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${
-                  currentView === 'reminders' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
-                }`}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${currentView === 'reminders' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
+                  }`}
               >
                 Reminders
               </button>
-              <button 
+              <button
                 onClick={() => setCurrentView('calendar')}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${
-                  currentView === 'calendar' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
-                }`}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${currentView === 'calendar' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
+                  }`}
               >
                 Calendar
               </button>
-              <button 
+              <button
                 onClick={() => setCurrentView('analytics')}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${
-                  currentView === 'analytics' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
-                }`}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${currentView === 'analytics' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
+                  }`}
               >
                 Analytics
               </button>
-              <button 
+              <button
                 onClick={() => setCurrentView('profile')}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${
-                  currentView === 'profile' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
-                }`}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${currentView === 'profile' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
+                  }`}
               >
                 Profile
               </button>
@@ -111,57 +103,44 @@ function App() {
 
       {/* Quick Action Buttons */}
       <div className="fixed bottom-6 right-6 space-y-3">
-        <button 
-          onClick={() => setCurrentView('add-medication')}
-          className="bg-brand-500 hover:bg-brand-600 text-white p-3 rounded-full shadow-lg transition-all hover:scale-105 text-sm"
-          title="Add Medication"
-        >
-          +
-        </button>
-        <button 
+
+        <button
           onClick={() => setCurrentView('notifications')}
           className="bg-accent-800 hover:bg-accent-900 text-white p-3 rounded-full shadow-lg transition-all hover:scale-105 text-sm"
           title="Notifications"
         >
           !
         </button>
-        <button 
-          onClick={() => setCurrentView('emergency')}
-          className="bg-error-600 hover:bg-error-700 text-white p-3 rounded-full shadow-lg transition-all hover:scale-105 text-sm"
-          title="Emergency"
-        >
-          SOS
-        </button>
       </div>
 
       {/* Bottom Navigation (Mobile) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-brand-200 px-4 py-2">
         <div className="flex justify-around">
-          <button 
+          <button
             onClick={() => setCurrentView('dashboard')}
             className="flex flex-col items-center py-2"
           >
             <span className="text-sm font-medium text-brand-600">Dashboard</span>
           </button>
-          <button 
+          <button
             onClick={() => setCurrentView('medications')}
             className="flex flex-col items-center py-2"
           >
             <span className="text-sm font-medium text-brand-600">Medications</span>
           </button>
-          <button 
+          <button
             onClick={() => setCurrentView('reminders')}
             className="flex flex-col items-center py-2"
           >
             <span className="text-sm font-medium text-brand-600">Reminders</span>
           </button>
-          <button 
+          <button
             onClick={() => setCurrentView('calendar')}
             className="flex flex-col items-center py-2"
           >
             <span className="text-sm font-medium text-brand-600">Calendar</span>
           </button>
-          <button 
+          <button
             onClick={() => setCurrentView('profile')}
             className="flex flex-col items-center py-2"
           >
