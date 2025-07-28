@@ -1,10 +1,12 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-require('dotenv').config();
+import express, { Request, Response } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || '3001', 10);
 
 // Middleware
 app.use(helmet());
@@ -17,7 +19,7 @@ app.use(cors({
 app.use(express.json());
 
 // Routes
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ 
     status: 'OK', 
     message: 'MediMate API is running',
@@ -27,7 +29,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Mock medications endpoint
-app.get('/api/medications', (req, res) => {
+app.get('/api/medications', (_req: Request, res: Response) => {
   res.json([
     {
       id: '1',

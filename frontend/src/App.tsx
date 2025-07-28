@@ -2,22 +2,24 @@
 import React, { useState } from 'react'
 
 // Placeholder Components - implement these later
-const Dashboard = () => <div className="p-8 text-center text-brand-600">Dashboard</div>
-const Medications = () => <div className="p-8 text-center text-brand-600">Medications</div>
-const Reminders = () => <div className="p-8 text-center text-brand-600">Reminders</div>
-const Profile = () => <div className="p-8 text-center text-brand-600">Profile</div>
-const Settings = () => <div className="p-8 text-center text-brand-600">Settings</div>
-const Calendar = () => <div className="p-8 text-center text-brand-600">Calendar</div>
-const Analytics = () => <div className="p-8 text-center text-brand-600">Analytics</div>
-const Notifications = () => <div className="p-8 text-center text-brand-600">Notifications</div>
-const MedicationDetail = () => <div className="p-8 text-center text-brand-600">MedicationDetail</div>
-const ReminderHistory = () => <div className="p-8 text-center text-brand-600">ReminderHistory</div>
-const DoseTracker = () => <div className="p-8 text-center text-brand-600">DoseTracker</div>
-const Reports = () => <div className="p-8 text-center text-brand-600">Reports</div>
-const Help = () => <div className="p-8 text-center text-brand-600">Help</div>
+const Dashboard: React.FC = () => <div className="p-8 text-center text-brand-600">Dashboard</div>
+const Medications: React.FC = () => <div className="p-8 text-center text-brand-600">Medications</div>
+const Reminders: React.FC = () => <div className="p-8 text-center text-brand-600">Reminders</div>
+const Profile: React.FC = () => <div className="p-8 text-center text-brand-600">Profile</div>
+const Settings: React.FC = () => <div className="p-8 text-center text-brand-600">Settings</div>
+const Calendar: React.FC = () => <div className="p-8 text-center text-brand-600">Calendar</div>
+const Analytics: React.FC = () => <div className="p-8 text-center text-brand-600">Analytics</div>
+const Notifications: React.FC = () => <div className="p-8 text-center text-brand-600">Notifications</div>
+const MedicationDetail: React.FC = () => <div className="p-8 text-center text-brand-600">MedicationDetail</div>
+const ReminderHistory: React.FC = () => <div className="p-8 text-center text-brand-600">ReminderHistory</div>
+const DoseTracker: React.FC = () => <div className="p-8 text-center text-brand-600">DoseTracker</div>
+const Reports: React.FC = () => <div className="p-8 text-center text-brand-600">Reports</div>
+const Help: React.FC = () => <div className="p-8 text-center text-brand-600">Help</div>
 
-function App() {
-  const [currentView, setCurrentView] = useState('dashboard')
+type ViewType = 'dashboard' | 'medications' | 'reminders' | 'profile' | 'settings' | 'calendar' | 'analytics' | 'notifications' | 'medication-detail' | 'reminder-history' | 'dose-tracker' | 'reports' | 'help'
+
+const App: React.FC = () => {
+  const [currentView, setCurrentView] = useState<ViewType>('dashboard')
 
   // Simple view switcher - replace with proper routing later
   const renderCurrentView = () => {
