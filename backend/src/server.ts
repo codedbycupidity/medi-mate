@@ -2,6 +2,8 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import connectDB from './config/database';
+import medicationRoutes from './routes/medications';
 
 dotenv.config();
 
@@ -28,29 +30,16 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
-// Mock medications endpoint
-app.get('/api/medications', (_req: Request, res: Response) => {
-  res.json([
-    {
-      id: '1',
-      name: 'Vitamin D',
-      dosage: '1000mg',
-      frequency: 'Daily',
-      time: '08:00',
-      instructions: 'Take with breakfast'
-    },
-    {
-      id: '2',
-      name: 'Fish Oil',
-      dosage: '500mg',
-      frequency: 'Twice daily',
-      time: '08:00, 18:00',
-      instructions: 'Take with meals'
-    }
-  ]);
-});
+// API Routes
+app.use('/api/medications', medicationRoutes);
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 MediMate API running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+// Connect to MongoDB
+connectDB().then(() => {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 MediMate API running on port ${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+  });
+}).catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });
