@@ -4,16 +4,16 @@
 
 ```bash
 # Start all services (primary command)
-./start-dev.sh
+make dev
 
-# Alternative start
-./services.sh start
+# Install all dependencies
+make install
 
-# Stop all services
-./services.sh stop
+# Full project setup
+make setup
 
-# Restart all services
-./services.sh restart
+# See all available commands
+make help
 ```
 
 ## 🐳 Docker Management
@@ -21,36 +21,26 @@
 ### Service Control
 ```bash
 # Start all services
-./services.sh start
+make docker-up
 
 # Stop all services  
-./services.sh stop
+make docker-down
 
 # Restart all services
-./services.sh restart
+make docker-restart
 
-# Reset database and volumes
-./services.sh reset
-
-# Rebuild all services
-./services.sh build
-
-# Rebuild specific service
-./services.sh build frontend
-./services.sh build backend
+# View Docker logs
+make docker-logs
 ```
 
-### View Logs
+### Direct Docker Commands
 ```bash
-# Show logs for all services
-./services.sh logs
+# Reset database and volumes
+docker-compose down -v
 
-# Show logs for specific service
-./services.sh logs frontend
-./services.sh logs backend
-./services.sh logs database
-./services.sh logs redis
-./services.sh logs nginx
+# Rebuild specific service
+docker-compose build frontend
+docker-compose build backend
 
 # Follow logs in real-time
 docker-compose logs -f
@@ -59,141 +49,145 @@ docker-compose logs -f frontend
 
 ### Container Shell Access
 ```bash
-# Open shell in backend container
-./services.sh shell backend
-
-# Open shell in frontend container
-./services.sh shell frontend
-
-# Alternative direct access
+# Open shell in containers
 docker-compose exec backend sh
 docker-compose exec frontend sh
+docker-compose exec database sh
 ```
 
 ## 🛠️ Development Commands
+
+### Individual Services
+```bash
+# Start backend dev server
+make dev-backend
+
+# Start frontend dev server
+make dev-frontend
+
+# Start mobile metro bundler
+make dev-mobile
+```
+
+### Building
+```bash
+# Build all projects
+make build
+
+# Build specific projects
+make build-shared
+make build-backend
+make build-frontend
+```
+
+### Testing & Quality
+```bash
+# Run all tests
+make test
+
+# Run specific tests
+make test-backend
+make test-frontend
+make test-mobile
+
+# Run linters
+make lint
+
+# Type checking
+make typecheck
+```
+
+### Mobile Development
+```bash
+# Run iOS app
+make ios
+
+# Run Android app
+make android
+```
+
+## 📦 Package Management
+
+### Install Dependencies
+```bash
+# Install all dependencies
+make install
+
+# Install specific service dependencies
+make install-backend
+make install-frontend
+make install-mobile
+make install-shared
+```
+
+### Add New Packages
+```bash
+# Frontend (React)
+cd frontend && npm install package-name
+cd frontend && npm install --save-dev package-name
+
+# Backend (Node.js)
+cd backend && npm install package-name
+cd backend && npm install --save-dev package-name
+
+# Mobile (React Native)
+cd mobile && npm install package-name
+cd mobile && npm install --save-dev package-name
+```
+
+## 🗄️ Database Management
+
+### MongoDB Commands
+```bash
+# Connect to MongoDB
+docker-compose exec database mongosh -u admin -p adminpass medimate
+
+# Export database
+docker-compose exec database mongodump -u admin -p adminpass --db medimate --out /dump
+
+# Import database
+docker-compose exec database mongorestore -u admin -p adminpass --db medimate /dump/medimate
+
+# Reset database (removes all data)
+docker-compose down -v
+```
+
+### MongoDB Queries (inside mongosh)
+```javascript
+// Show all databases
+show dbs
+
+// Use medimate database
+use medimate
+
+// Show all collections
+show collections
+
+// Find documents
+db.users.find()
+db.medications.find().limit(5)
+db.reminders.find({status: "pending"})
+
+// Count documents
+db.users.countDocuments()
+
+// Exit
+exit
+```
+
+## 🔍 Debugging Commands
 
 ### Check Running Services
 ```bash
 # See all running containers
 docker ps
 
-# See all containers (including stopped)
-docker ps -a
-
 # Check service status
 docker-compose ps
+
+# Check container resource usage
+docker stats
 ```
-
-### Port Management
-```bash
-# Check what's using port 3000
-lsof -i :3000
-
-# Check what's using port 3001
-lsof -i :3001
-
-# Check multiple ports
-lsof -i :3000 -i :3001 -i :5432
-
-# Kill process using specific port
-kill -9 $(lsof -ti:3000)
-kill -9 $(lsof -ti:3001)
-```
-
-### Docker Status
-```bash
-# Check if Docker is running
-docker info
-
-# Docker version
-docker --version
-docker-compose --version
-
-# Docker system information
-docker system df
-docker system prune -f
-```
-
-## 📦 Package Management
-
-### Frontend (React)
-```bash
-# Navigate to frontend
-cd frontend
-
-# Install new package
-npm install package-name
-npm install --save-dev package-name
-
-# Update packages
-npm update
-
-# Check for outdated packages
-npm outdated
-
-# Local development (without Docker)
-npm start
-```
-
-### Backend (Node.js)
-```bash
-# Navigate to backend
-cd backend
-
-# Install new package
-npm install package-name
-
-# Install development dependency
-npm install --save-dev package-name
-
-# Local development (without Docker)
-npm run dev
-npm start
-```
-
-## 🗄️ Database Management
-
-### PostgreSQL Commands
-```bash
-# Connect to database
-docker-compose exec database psql -U dev medimate
-
-# Run SQL commands from file
-docker-compose exec database psql -U dev medimate -f /path/to/file.sql
-
-# Backup database
-docker-compose exec database pg_dump -U dev medimate > backup.sql
-
-# Restore database
-docker-compose exec -T database psql -U dev medimate < backup.sql
-
-# Reset database (removes all data)
-./services.sh reset
-```
-
-### Database Queries (inside psql)
-```sql
--- List all tables
-\dt
-
--- Describe table structure
-\d table_name
-
--- List all databases
-\l
-
--- Quit psql
-\q
-
--- Show current database
-SELECT current_database();
-
--- Check table contents
-SELECT * FROM users LIMIT 5;
-SELECT * FROM medications LIMIT 5;
-```
-
-## 🔍 Debugging Commands
 
 ### Container Debugging
 ```bash
@@ -207,32 +201,6 @@ docker-compose logs -f backend
 # Inspect container
 docker inspect medimate_frontend
 docker inspect medimate_api
-
-# Check container resource usage
-docker stats
-
-# List Docker networks
-docker network ls
-
-# Inspect network
-docker network inspect medi-mate_medimate_network
-```
-
-### File System
-```bash
-# Check disk usage
-df -h
-
-# Check directory size
-du -sh .
-du -sh */
-
-# List files with permissions
-ls -la
-
-# Find files
-find . -name "*.js"
-find . -name "package.json"
 ```
 
 ## 🌐 Network & API Testing
@@ -252,25 +220,27 @@ curl http://localhost:3001/api/medications
 curl -H "Content-Type: application/json" http://localhost:3001/api/health
 ```
 
-### Network Diagnostics
+### Port Management
 ```bash
-# Check if services are responding
-ping localhost
-telnet localhost 3000
-telnet localhost 3001
+# Check what's using ports
+lsof -i :3000
+lsof -i :3001
+lsof -i :27017
 
-# Check DNS resolution (if using custom domains)
-nslookup localhost
+# Kill process using specific port
+kill -9 $(lsof -ti:3000)
+kill -9 $(lsof -ti:3001)
 ```
 
 ## 🔧 Troubleshooting Commands
 
 ### Clean Restart
 ```bash
-# Stop everything
-./services.sh stop
+# Clean all build artifacts
+make clean
 
-# Remove all containers and volumes
+# Stop and remove all containers
+make docker-down
 docker-compose down -v
 
 # Remove all stopped containers
@@ -279,9 +249,10 @@ docker rm $(docker ps -aq)
 # Remove unused images
 docker image prune -f
 
-# Remove everything and start fresh
+# Full system reset
 docker system prune -af
-./services.sh start
+make setup
+make dev
 ```
 
 ### Fix Common Issues
@@ -290,31 +261,12 @@ docker system prune -af
 kill -9 $(lsof -ti:3000)
 kill -9 $(lsof -ti:3001)
 
-# Docker daemon not running
-# Start Docker Desktop application
-
 # Permission denied
-chmod +x script-name.sh
+chmod +x Makefile
 
 # Node modules issues
-rm -rf frontend/node_modules
-rm -rf backend/node_modules
-./services.sh build
-```
-
-### Memory & Performance
-```bash
-# Check system resources
-top
-htop (if installed)
-
-# Check memory usage
-free -h (Linux)
-vm_stat (Mac)
-
-# Check Docker resource usage
-docker system df
-docker stats
+make clean
+make install
 ```
 
 ## 📂 File Operations
@@ -327,61 +279,41 @@ cd /path/to/medi-mate
 # Navigate to specific service
 cd frontend
 cd backend
-cd database
+cd mobile
+cd shared
 
 # Go back to parent directory
 cd ..
-cd -  # Go to previous directory
 ```
 
 ### File Editing
 ```bash
 # Edit with VS Code
 code .
-code frontend/src/App.js
-code backend/src/server.js
+code frontend/src/App.tsx
+code backend/src/server.ts
 
 # Edit with nano
-nano frontend/package.json
 nano docker-compose.yml
+nano Makefile
 
 # Edit with vim
-vim backend/src/server.js
+vim backend/src/server.ts
 ```
 
-### File Permissions
-```bash
-# Make script executable
-chmod +x script-name.sh
-
-# Check file permissions
-ls -la filename
-
-# Change file ownership
-chown user:group filename
-```
-
-## 🔄 Git Commands (Optional)
+## 🔄 Git Commands
 
 ### Basic Git Operations
 ```bash
-# Initialize git repository
-git init
-
-# Add all files
-git add .
-
-# Commit changes
-git commit -m "Initial commit"
-
 # Check status
 git status
 
-# Check differences
-git diff
+# Add and commit changes
+git add .
+git commit -m "Your message"
 
-# View commit history
-git log --oneline
+# Install git hooks
+make install-hooks
 ```
 
 ## 🚨 Emergency Commands
@@ -396,18 +328,14 @@ docker rm $(docker ps -aq)
 
 # Kill all node processes
 pkill -f node
-
-# Restart Docker Desktop
-# Use Docker Desktop menu: Restart
 ```
 
 ### System Reset
 ```bash
 # Nuclear option - removes everything
 docker system prune -af --volumes
-rm -rf frontend/node_modules
-rm -rf backend/node_modules
-./services.sh start
+make clean
+make setup
 ```
 
 ## 📊 Monitoring Commands
@@ -418,10 +346,7 @@ rm -rf backend/node_modules
 watch docker stats
 
 # Monitor logs continuously
-./services.sh logs | grep ERROR
-
-# Watch file changes
-watch ls -la
+make docker-logs | grep ERROR
 
 # Monitor network connections
 netstat -an | grep 3000
@@ -430,14 +355,20 @@ netstat -an | grep 3000
 ## 🎯 Quick Access URLs
 
 ```bash
-# Open in browser (Mac)
-open http://localhost:3000  # Frontend
-open http://localhost:3001  # Backend API
-open http://localhost:80    # Full app via Nginx
+# Frontend
+http://localhost:3000
 
-# Test endpoints quickly
-curl localhost:3001/api/health
-curl localhost:3001/api/medications
+# Backend API
+http://localhost:3001
+
+# Mobile Metro Bundler
+http://localhost:8081
+
+# Nginx Proxy
+http://localhost:80
+
+# MongoDB
+mongodb://admin:adminpass@localhost:27017
 ```
 
 ## 💡 Pro Tips
@@ -446,10 +377,10 @@ curl localhost:3001/api/medications
 ```bash
 # Add these to your shell profile for quick access
 alias medi="cd /path/to/medi-mate"
-alias mstart="./services.sh start"
-alias mstop="./services.sh stop"
-alias mlogs="./services.sh logs"
-alias mrestart="./services.sh restart"
+alias mstart="make dev"
+alias mstop="make docker-down"
+alias mlogs="make docker-logs"
+alias mtest="make test"
 ```
 
 ### Environment Variables
@@ -457,6 +388,7 @@ alias mrestart="./services.sh restart"
 # Check environment variables
 printenv | grep REACT
 printenv | grep NODE
+printenv | grep MONGO
 
 # Set temporary environment variable
 export NODE_ENV=development
@@ -469,10 +401,11 @@ export DEBUG=true
 
 **Most Used Commands:**
 ```bash
-./start-dev.sh              # Start everything
-./services.sh stop           # Stop everything  
-./services.sh logs backend   # Debug backend
-./services.sh shell frontend # Debug frontend
+make dev                     # Start everything
+make docker-down             # Stop everything  
+make docker-logs             # View logs
+make test                    # Run tests
+make typecheck               # Type checking
 curl localhost:3001/api/health # Test API
 ```
 
@@ -480,5 +413,14 @@ curl localhost:3001/api/health # Test API
 ```bash
 kill -9 $(lsof -ti:3000)     # Fix port conflicts
 docker-compose down -v       # Reset database
-./services.sh reset          # Nuclear reset
+make clean                   # Clean everything
+```
+
+**Development Flow:**
+```bash
+make setup                   # Initial setup
+make dev                     # Start development
+make test                    # Run tests
+make typecheck               # Check types
+make docker-down             # Stop when done
 ```
