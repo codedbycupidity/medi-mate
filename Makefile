@@ -1,202 +1,421 @@
-.PHONY: help install install-backend install-frontend install-mobile install-shared build build-shared build-backend build-frontend build-mobile dev dev-backend dev-frontend dev-mobile dev-docker test test-backend test-frontend test-mobile lint typecheck clean docker-up docker-down docker-restart docker-logs setup
+# Makefile for MediMate
+# Run 'make' or 'make help' to see all available commands
 
-# Default target
-help:
-	@echo "MediMate Development Commands:"
+.PHONY: help
+help: ## Show this help message
+	@echo "MediMate - Available Commands:"
+	@echo "========================================"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Setup & Installation:"
-	@echo "  make setup              - Full project setup (install all dependencies)"
-	@echo "  make install            - Install all dependencies"
-	@echo "  make install-backend    - Install backend dependencies"
-	@echo "  make install-frontend   - Install frontend dependencies"
-	@echo "  make install-mobile     - Install mobile dependencies"
-	@echo "  make install-shared     - Install shared dependencies"
-	@echo ""
-	@echo "Development:"
-	@echo "  make dev                - Start all dev servers (Docker)"
-	@echo "  make dev-backend        - Start backend dev server"
-	@echo "  make dev-frontend       - Start frontend dev server"
-	@echo "  make dev-mobile         - Start mobile metro bundler"
-	@echo "  make dev-docker         - Start all services with Docker"
-	@echo ""
-	@echo "Building:"
-	@echo "  make build              - Build all projects"
-	@echo "  make build-shared       - Build shared package"
-	@echo "  make build-backend      - Build backend"
-	@echo "  make build-frontend     - Build frontend"
-	@echo "  make build-mobile       - Build mobile app"
-	@echo ""
-	@echo "Testing & Quality:"
-	@echo "  make test               - Run all tests"
-	@echo "  make test-backend       - Run backend tests"
-	@echo "  make test-frontend      - Run frontend tests"
-	@echo "  make test-mobile        - Run mobile tests"
-	@echo "  make lint               - Run linters"
-	@echo "  make typecheck          - Run TypeScript type checking"
-	@echo ""
-	@echo "Docker:"
-	@echo "  make docker-up          - Start Docker containers"
-	@echo "  make docker-down        - Stop Docker containers"
-	@echo "  make docker-restart     - Restart Docker containers"
-	@echo "  make docker-logs        - View Docker logs"
-	@echo ""
-	@echo "Utilities:"
-	@echo "  make clean              - Clean all build artifacts and node_modules"
-	@echo ""
-	@echo "Mobile Development:"
-	@echo "  make ios                - Run iOS app (using existing Metro bundler)"
-	@echo "  make android            - Run Android app (using existing Metro bundler)"
-	@echo "  make ios-install-deps   - Install iOS dependencies (CocoaPods)"
-	@echo "  make android-clean      - Clean Android build"
+	@echo "Quick Start: make setup && make dev"
+	@echo "Mobile:      make ios (auto-configures simulator)"
 
-# Setup
-setup: install-shared install-backend install-frontend install-mobile build-shared
-	@echo "✅ Project setup complete!"
-
-# Installation targets
-install: install-shared install-backend install-frontend install-mobile
-	@echo "✅ All dependencies installed!"
-
-install-shared:
-	@echo "📦 Installing shared dependencies..."
-	@cd shared && npm install
-
-install-backend:
-	@echo "📦 Installing backend dependencies..."
+# Environment setup
+.PHONY: setup
+setup: ## Initial project setup (run this first!)
+	@echo "🚀 Setting up project..."
+	@if [ ! -f .env.dev ]; then \
+		echo "📝 Creating .env.dev from template..."; \
+		cp .env.example .env.dev; \
+		echo "⚠️  Please update .env.dev with your credentials!"; \
+	fi
+	@echo "📦 Installing dependencies..."
 	@cd backend && npm install
-
-install-frontend:
-	@echo "📦 Installing frontend dependencies..."
-	@cd frontend && npm install --legacy-peer-deps
-
-install-mobile:
-	@echo "📦 Installing mobile dependencies..."
+	@cd frontend && npm install
 	@cd mobile && npm install
+	@cd shared && npm install && npm run build
+	@echo "✅ Setup complete!"
 
-# Build targets
-build: build-shared build-backend build-frontend
-	@echo "✅ All projects built!"
+.PHONY: dev
+dev: ## Start all services in development mode
+	@echo "🚀 Starting development environment..."
+	@if [ ! -f .env.dev ]; then \
+		echo "❌ .env.dev not found! Run 'make setup' first"; \
+		exit 1; \
+	fi
+	@docker-compose --env-file .env.dev up
 
-build-shared:
-	@echo "🔨 Building shared package..."
-	@cd shared && npm run build
+.PHONY: up
+up: dev-d ## Alias for dev-d (background mode)
 
-build-backend: build-shared
-	@echo "🔨 Building backend..."
-	@cd backend && npm run build
+.PHONY: dev-d
+dev-d: ## Start all services in background (detached)
+	@echo "🚀 Starting development environment (detached)..."
+	@if [ ! -f .env.dev ]; then \
+		echo "❌ .env.dev not found! Run 'make setup' first"; \
+		exit 1; \
+	fi
+	@docker-compose --env-file .env.dev up -d
+	@sleep 3
+	@echo "✅ Services started!"
+	@echo "   • Frontend: http://localhost:3000"
+	@echo "   • Backend:  http://localhost:3001"
+	@echo "   • Mobile:   Run 'make ios' or 'make android'"
+	@echo ""
+	@echo "Run 'make logs' to view logs"
+	@echo "Run 'make status' to check status"
 
-build-frontend: build-shared
-	@echo "🔨 Building frontend..."
-	@cd frontend && npm run build
+.PHONY: stop
+stop: ## Stop all running services
+	@echo "🛑 Stopping all services..."
+	@docker-compose down
 
-build-mobile:
-	@echo "🔨 Building mobile app..."
-	@echo "Run 'npm run ios' or 'npm run android' in the mobile directory"
+.PHONY: down
+down: stop ## Alias for stop
 
-# Development targets
-dev: dev-docker
-	@echo "🚀 Development environment started!"
+.PHONY: restart
+restart: stop dev ## Restart all services
 
-dev-backend:
-	@echo "🚀 Starting backend dev server..."
+.PHONY: rebuild
+rebuild: ## Rebuild and start all services
+	@echo "🔨 Rebuilding all services..."
+	@if [ ! -f .env.dev ]; then \
+		echo "❌ .env.dev not found! Run 'make setup' first"; \
+		exit 1; \
+	fi
+	@docker-compose --env-file .env.dev up --build
+
+.PHONY: status
+status: ## Show status of all services
+	@echo "📊 Service Status:"
+	@docker-compose ps
+	@echo ""
+	@make health
+
+.PHONY: ps
+ps: status ## Alias for status
+
+.PHONY: health
+health: ## Check health of all services
+	@echo "🏥 Health Checks:"
+	@curl -s http://localhost:3001/api/health >/dev/null 2>&1 && echo "✅ Backend: Healthy" || echo "❌ Backend: Not responding"
+	@curl -s http://localhost:3000 >/dev/null 2>&1 && echo "✅ Frontend: Running" || echo "❌ Frontend: Not responding"
+	@curl -s http://localhost >/dev/null 2>&1 && echo "✅ Nginx: Running" || echo "❌ Nginx: Not responding"
+
+.PHONY: logs
+logs: ## Show logs from all services
+	@docker-compose logs -f
+
+.PHONY: logs-backend
+logs-backend: ## Show Backend logs only
+	@docker-compose logs -f backend
+
+.PHONY: logs-frontend
+logs-frontend: ## Show Frontend logs only
+	@docker-compose logs -f frontend
+
+.PHONY: logs-db
+logs-db: ## Show MongoDB logs only
+	@docker-compose logs -f database
+
+.PHONY: clean
+clean: stop ## Stop services and remove volumes (fresh start)
+	@echo "🧹 Cleaning up volumes and containers..."
+	@docker-compose down -v --remove-orphans
+	@echo "✅ Cleanup complete!"
+
+.PHONY: reset
+reset: clean setup dev ## Full reset (clean + setup + dev)
+
+# Development commands
+.PHONY: backend
+backend: ## Start only Backend service locally
+	@echo "🚀 Starting Backend..."
+	@if [ ! -f .env.dev ]; then \
+		echo "❌ .env.dev not found! Run 'make setup' first"; \
+		exit 1; \
+	fi
+	@if [ ! -f backend/.env ]; then \
+		echo "📝 Creating backend/.env from .env.dev..."; \
+		grep -E "^(NODE_ENV|PORT|MONGODB_URI|JWT_SECRET|FRONTEND_URL|REDIS_URL)" .env.dev > backend/.env; \
+	fi
 	@cd backend && npm run dev
 
-dev-frontend:
-	@echo "🚀 Starting frontend dev server..."
+.PHONY: frontend
+frontend: ## Start only Frontend service locally
+	@echo "🚀 Starting Frontend..."
+	@if [ ! -f .env.dev ]; then \
+		echo "❌ .env.dev not found! Run 'make setup' first"; \
+		exit 1; \
+	fi
+	@if [ ! -f frontend/.env ]; then \
+		echo "📝 Creating frontend/.env from .env.dev..."; \
+		grep -E "^(REACT_APP_)" .env.dev > frontend/.env; \
+	fi
 	@cd frontend && npm start
 
-dev-mobile:
-	@echo "🚀 Starting mobile metro bundler..."
+.PHONY: mobile-metro
+mobile-metro: ## Start React Native Metro bundler
+	@echo "📱 Starting Metro bundler..."
 	@cd mobile && npm start
 
-dev-docker: docker-up
-	@echo "🚀 Docker development environment started!"
+# Mobile commands
+.PHONY: ios
+ios: ## Run on iOS Simulator (iPhone 16)
+	@echo "📱 Starting iOS app..."
+	@if [ ! -f .env.dev ]; then \
+		echo "❌ .env.dev not found! Run 'make setup' first"; \
+		exit 1; \
+	fi
+	@if [ ! -f mobile/.env ]; then \
+		echo "📝 Creating mobile/.env from .env.dev..."; \
+		grep -E "^(API_URL_DEV|API_URL_PROD)" .env.dev > mobile/.env; \
+	fi
+	@cd mobile && npx react-native run-ios --simulator="iPhone 16"
 
-# Test targets
-test: test-backend test-frontend test-mobile
-	@echo "✅ All tests completed!"
+.PHONY: android
+android: ## Run on Android Emulator
+	@echo "🤖 Starting Android app..."
+	@if [ ! -f .env.dev ]; then \
+		echo "❌ .env.dev not found! Run 'make setup' first"; \
+		exit 1; \
+	fi
+	@if [ ! -f mobile/.env ]; then \
+		echo "📝 Creating mobile/.env from .env.dev..."; \
+		grep -E "^(API_URL_DEV|API_URL_PROD)" .env.dev > mobile/.env; \
+	fi
+	@cd mobile && npx react-native run-android
 
-test-backend:
-	@echo "🧪 Running backend tests..."
+.PHONY: ios-device
+ios-device: ## Run on physical iOS device
+	@echo "📱 Running on physical iPhone..."
+	@echo "📝 Make sure your device is connected and trusted"
+	@cd mobile && npx react-native run-ios --device
+
+.PHONY: android-device
+android-device: ## Run on physical Android device
+	@echo "🤖 Running on physical Android device..."
+	@echo "📝 Make sure USB debugging is enabled"
+	@cd mobile && npx react-native run-android
+
+.PHONY: ios-clean
+ios-clean: ## Clean iOS build
+	@echo "🧹 Cleaning iOS build..."
+	@cd mobile/ios && xcodebuild clean -workspace mobile.xcworkspace -scheme mobile
+
+.PHONY: ios-pods
+ios-pods: ## Install iOS dependencies (CocoaPods)
+	@echo "📱 Installing iOS dependencies..."
+	@cd mobile/ios && pod install
+
+.PHONY: ios-rebuild
+ios-rebuild: ios-clean ios-pods ios ## Clean and rebuild iOS app
+
+.PHONY: android-clean
+android-clean: ## Clean Android build
+	@echo "🧹 Cleaning Android build..."
+	@cd mobile/android && ./gradlew clean
+
+.PHONY: mobile-clean
+mobile-clean: ## Clean React Native cache
+	@echo "🧹 Cleaning React Native cache..."
+	@cd mobile && npx react-native-clean-project
+
+# Testing commands
+.PHONY: test
+test: ## Run all tests
+	@echo "🧪 Running tests..."
 	@cd backend && npm test
-
-test-frontend:
-	@echo "🧪 Running frontend tests..."
-	@cd frontend && npm test
-
-test-mobile:
-	@echo "🧪 Running mobile tests..."
+	@cd frontend && npm test -- --run
 	@cd mobile && npm test
 
-# Linting and type checking
-lint:
+.PHONY: test-backend
+test-backend: ## Run Backend tests only
+	@echo "🧪 Running Backend tests..."
+	@cd backend && npm test
+
+.PHONY: test-frontend
+test-frontend: ## Run Frontend tests only
+	@echo "🧪 Running Frontend tests..."
+	@cd frontend && npm test -- --run
+
+.PHONY: test-mobile
+test-mobile: ## Run Mobile tests only
+	@echo "🧪 Running Mobile tests..."
+	@cd mobile && npm test
+
+.PHONY: test-watch
+test-watch: ## Run tests in watch mode
+	@echo "👁️  Running tests in watch mode..."
+	@echo "Choose: [1] Backend, [2] Frontend, [3] Mobile"
+	@read choice; \
+	if [ "$$choice" = "1" ]; then \
+		cd backend && npm test -- --watch; \
+	elif [ "$$choice" = "2" ]; then \
+		cd frontend && npm test; \
+	elif [ "$$choice" = "3" ]; then \
+		cd mobile && npm test -- --watch; \
+	fi
+
+# Code quality
+.PHONY: lint
+lint: ## Run linters on all code
 	@echo "🔍 Running linters..."
 	@cd backend && npm run lint || true
 	@cd frontend && npm run lint || true
 	@cd mobile && npm run lint || true
 
-typecheck:
-	@echo "🔍 Running TypeScript type checking..."
-	@cd shared && npx tsc --noEmit
+.PHONY: typecheck
+typecheck: ## Run TypeScript type checking
+	@echo "🔍 Type checking..."
 	@cd backend && npm run typecheck
-	@cd frontend && npm run typecheck || true
+	@cd frontend && npm run typecheck
 	@cd mobile && npm run typecheck
 
-# Docker commands
-docker-up:
-	@echo "🐳 Starting Docker containers..."
-	@docker-compose up -d
-
-docker-down:
-	@echo "🐳 Stopping Docker containers..."
-	@docker-compose down
-
-docker-restart: docker-down docker-up
-	@echo "🐳 Docker containers restarted!"
-
-docker-logs:
-	@echo "📋 Docker logs (Ctrl+C to exit)..."
-	@docker-compose logs -f
-
-# Clean
-clean:
-	@echo "🧹 Cleaning build artifacts and dependencies..."
-	@rm -rf shared/dist shared/node_modules
-	@rm -rf backend/dist backend/node_modules
-	@rm -rf frontend/build frontend/node_modules
-	@rm -rf mobile/node_modules mobile/ios/Pods
-	@echo "✅ Cleanup complete!"
-
 # Database commands
-db-seed:
+.PHONY: db-shell
+db-shell: ## Open MongoDB shell
+	@docker-compose exec database mongosh -u admin -p adminpass medimate
+
+.PHONY: db-seed
+db-seed: ## Seed database with sample data
 	@echo "🌱 Seeding database..."
-	@cd backend && npm run seed || echo "Seed script not found"
+	@docker-compose exec backend npm run seed
 
-db-migrate:
-	@echo "📊 Running database migrations..."
-	@cd backend && npm run migrate || echo "Migration script not found"
+.PHONY: db-reset
+db-reset: ## Reset database (drop all data)
+	@echo "🗑️  Resetting database..."
+	@docker-compose down -v database
+	@docker-compose up -d database
+	@echo "⏳ Waiting for database to start..."
+	@sleep 5
+	@echo "✅ Database reset complete!"
 
-# Mobile specific commands
-ios: install-mobile
-	@echo "📱 Starting iOS app..."
-	@cd mobile && npx react-native run-ios --no-packager || true
-	@echo "✅ iOS app launched! Check your simulator."
+# Build commands
+.PHONY: build
+build: ## Build all projects
+	@echo "📦 Building all projects..."
+	@cd shared && npm run build
+	@cd backend && npm run build
+	@cd frontend && npm run build
+	@echo "✅ Build complete!"
 
-android: install-mobile
-	@echo "📱 Starting Android app..."
-	@cd mobile && npx react-native run-android --no-packager
+.PHONY: build-shared
+build-shared: ## Build shared package
+	@echo "📦 Building shared package..."
+	@cd shared && npm run build
 
-ios-install-deps:
-	@echo "📱 Installing iOS dependencies..."
-	@cd mobile/ios && pod install
+.PHONY: build-backend
+build-backend: ## Build Backend
+	@echo "📦 Building Backend..."
+	@cd backend && npm run build
 
-android-clean:
-	@echo "🧹 Cleaning Android build..."
-	@cd mobile/android && ./gradlew clean
+.PHONY: build-frontend
+build-frontend: ## Build Frontend
+	@echo "📦 Building Frontend..."
+	@cd frontend && npm run build
+
+.PHONY: build-mobile-ios
+build-mobile-ios: ## Build iOS app
+	@echo "📦 Building iOS app..."
+	@cd mobile && npx react-native build-ios
+
+.PHONY: build-mobile-android
+build-mobile-android: ## Build Android APK
+	@echo "📦 Building Android APK..."
+	@cd mobile && cd android && ./gradlew assembleRelease
+
+# Installation commands
+.PHONY: install
+install: ## Install all dependencies
+	@echo "📦 Installing all dependencies..."
+	@cd shared && npm install
+	@cd backend && npm install
+	@cd frontend && npm install
+	@cd mobile && npm install
+
+.PHONY: install-backend
+install-backend: ## Install Backend dependencies
+	@echo "📦 Installing Backend dependencies..."
+	@cd backend && npm install
+
+.PHONY: install-frontend
+install-frontend: ## Install Frontend dependencies
+	@echo "📦 Installing Frontend dependencies..."
+	@cd frontend && npm install
+
+.PHONY: install-mobile
+install-mobile: ## Install Mobile dependencies
+	@echo "📦 Installing Mobile dependencies..."
+	@cd mobile && npm install
+
+.PHONY: install-shared
+install-shared: ## Install Shared dependencies
+	@echo "📦 Installing Shared dependencies..."
+	@cd shared && npm install
+
+# Environment commands
+.PHONY: env-check
+env-check: ## Verify environment configuration
+	@echo "🔍 Checking environment configuration..."
+	@if [ ! -f backend/.env ]; then \
+		echo "❌ backend/.env file not found!"; \
+		exit 1; \
+	fi
+	@echo "✅ Environment files exist"
+
+# Docker commands
+.PHONY: docker-prune
+docker-prune: ## Clean up Docker system
+	@echo "🧹 Cleaning Docker system..."
+	@docker system prune -f
+
+.PHONY: docker-logs
+docker-logs: logs ## Alias for logs
+
+.PHONY: docker-up
+docker-up: dev-d ## Alias for dev-d
+
+.PHONY: docker-down
+docker-down: stop ## Alias for stop
+
+.PHONY: docker-restart
+docker-restart: restart ## Alias for restart
+
+# Utility commands
+.PHONY: info
+info: ## Show project information
+	@echo "📁 Project Structure:"
+	@echo "   • Backend:  Node.js + Express + MongoDB"
+	@echo "   • Frontend: React + TypeScript + Tailwind"
+	@echo "   • Mobile:   React Native + TypeScript"
+	@echo "   • Shared:   Common types and utilities"
+	@echo ""
+	@echo "🔗 Local URLs:"
+	@echo "   • Frontend: http://localhost:3000"
+	@echo "   • Backend:  http://localhost:3001"
+	@echo "   • Database: mongodb://localhost:27017"
+	@echo ""
+	@echo "📱 Mobile Development:"
+	@echo "   • iOS:      make ios"
+	@echo "   • Android:  make android"
+
+.PHONY: quick
+quick: setup dev ## Quick start (setup + dev)
 
 # Git hooks
-install-hooks:
+.PHONY: install-hooks
+install-hooks: ## Install git hooks
 	@echo "🪝 Installing git hooks..."
 	@echo "#!/bin/sh\nmake typecheck" > .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
 	@echo "✅ Git hooks installed!"
+
+# Environment management
+.PHONY: clean-env
+clean-env: ## Remove all generated .env files (keeps .env.dev and .env.prod)
+	@echo "🧹 Cleaning generated .env files..."
+	@rm -f backend/.env frontend/.env mobile/.env
+	@echo "✅ Cleaned generated env files"
+
+.PHONY: prod
+prod: ## Start services with production config (requires .env.prod)
+	@echo "🚀 Starting production environment..."
+	@if [ ! -f .env.prod ]; then \
+		echo "❌ .env.prod not found! Create it from .env.example"; \
+		exit 1; \
+	fi
+	@docker-compose --env-file .env.prod up -d
+
+# Default target
+.DEFAULT_GOAL := help

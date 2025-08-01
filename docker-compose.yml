@@ -6,8 +6,8 @@ services:
     image: mongo:7.0
     container_name: medimate_db
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: adminpass
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-adminpass}
       MONGO_INITDB_DATABASE: medimate
     ports:
       - "27017:27017"
@@ -35,10 +35,12 @@ services:
       - "3001:3001"
     environment:
       - NODE_ENV=development
-      - MONGODB_URI=mongodb://admin:adminpass@database:27017/medimate?authSource=admin
+      - MONGODB_URI=mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-adminpass}@database:27017/medimate?authSource=admin
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=dev_secret_key
+      - JWT_SECRET=${JWT_SECRET}
       - PORT=3001
+      - FRONTEND_URL=http://frontend:3000
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
     volumes:
       - ./backend:/app
       - ./shared:/shared
@@ -58,7 +60,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_API_URL=http://localhost:3001
+      # For local access from browser
+      - REACT_APP_API_URL=http://localhost:3001/api
+      - REACT_APP_PROXY_TARGET=http://backend:3001
       - CHOKIDAR_USEPOLLING=true
       - FAST_REFRESH=true
     volumes:
@@ -93,7 +97,7 @@ services:
     ports:
       - "8081:8081"  # Metro bundler port
     environment:
-      - REACT_APP_API_URL=http://localhost:3001
+      - API_URL_DEV=${MOBILE_API_URL:-http://backend:3001}
     volumes:
       - ./mobile:/app
       - ./shared:/shared

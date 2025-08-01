@@ -1,7 +1,14 @@
 // API configuration for mobile app
-// In production, this should point to your actual API server
+import Config from 'react-native-config';
 
-const API_HOST = __DEV__ ? 'http://localhost:3001' : 'https://api.medimate.com';
+// Use environment variables (required - no hardcoded fallbacks)
+const API_HOST = __DEV__ 
+  ? Config.API_URL_DEV
+  : Config.API_URL_PROD;
+
+if (!API_HOST) {
+  throw new Error('API_URL_DEV or API_URL_PROD must be configured in .env file');
+}
 
 export const API_URL = `${API_HOST}/api`;
 

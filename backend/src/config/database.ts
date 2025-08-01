@@ -5,7 +5,11 @@ dotenv.config();
 
 const connectDB = async (): Promise<void> => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/medimate';
+    const mongoUri = process.env.MONGODB_URI;
+    
+    if (!mongoUri) {
+      throw new Error('MONGODB_URI must be defined in environment variables');
+    }
     
     await mongoose.connect(mongoUri);
     

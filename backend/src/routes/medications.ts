@@ -1,88 +1,96 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import Medication from '../models/Medication';
-import mongoose from 'mongoose';
+import { authenticate } from '../middleware/auth';
+import catchAsync from '../utils/catchAsync';
+import AppError from '../utils/appError';
 
 const router = express.Router();
 
-// Get all medications for a user (mock userId for now)
-router.get('/', async (_req: Request, res: Response) => {
-  try {
-    // TODO: Get userId from authenticated user
-    const mockUserId = new mongoose.Types.ObjectId();
-    
-    const medications = await Medication.find({ 
-      userId: mockUserId,
-      active: true 
-    }).sort({ name: 1 });
-    
-    res.json(medications);
-  } catch (error) {
-    console.error('Error fetching medications:', error);
-    res.status(500).json({ error: 'Failed to fetch medications' });
-  }
-});
+// Extended Request interface for authenticated routes
+interface AuthRequest extends Request {
+  user?: any;
+  userId?: string;
+}
+
+// Get all medications for a user
+router.get('/', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
+  const userId = req.userId;
+  
+  const medications = await Medication.find({ 
+    userId: userId,
+    active: true 
+  }).sort({ name: 1 });
+  
+  res.json({
+    status: 'success',
+    results: medications.length,
+    data: {
+      medications
+    }
+  });
+}));
 
 // Create a new medication
-router.post('/', async (req: Request, res: Response) => {
-  try {
-    // TODO: Get userId from authenticated user
-    const mockUserId = new mongoose.Types.ObjectId();
-    
-    const medication = new Medication({
-      ...req.body,
-      userId: mockUserId
-    });
-    
-    await medication.save();
-    res.status(201).json(medication);
-  } catch (error) {
-    console.error('Error creating medication:', error);
-    res.status(500).json({ error: 'Failed to create medication' });
-  }
-});
+router.post('/', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
+  const userId = req.userId;
+  
+  const medication = new Medication({
+    ...req.body,
+    userId: userId
+  });
+  
+  await medication.save();
+  
+  res.status(201).json({
+    status: 'success',
+    data: {
+      medication
+    }
+  });
+}));
 
 // Update a medication
-router.put('/:id', async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const { id } = req.params;
-    
-    const medication = await Medication.findByIdAndUpdate(
-      id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-    
-    if (!medication) {
-      return res.status(404).json({ error: 'Medication not found' });
-    }
-    
-    return res.json(medication);
-  } catch (error) {
-    console.error('Error updating medication:', error);
-    return res.status(500).json({ error: 'Failed to update medication' });
+router.put('/:id', authenticate, catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  const userId = req.userId;
+  
+  const medication = await Medication.findOneAndUpdate(
+    { _id: id, userId: userId },
+    req.body,
+    { new: true, runValidators: true }
+  );
+  
+  if (!medication) {
+    return next(new AppError('Medication not found', 404));
   }
-});
+  
+  res.json({
+    status: 'success',
+    data: {
+      medication
+    }
+  });
+}));
 
 // Delete a medication (soft delete)
-router.delete('/:id', async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const { id } = req.params;
-    
-    const medication = await Medication.findByIdAndUpdate(
-      id,
-      { active: false },
-      { new: true }
-    );
-    
-    if (!medication) {
-      return res.status(404).json({ error: 'Medication not found' });
-    }
-    
-    return res.json({ message: 'Medication deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting medication:', error);
-    return res.status(500).json({ error: 'Failed to delete medication' });
+router.delete('/:id', authenticate, catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  const userId = req.userId;
+  
+  const medication = await Medication.findOneAndUpdate(
+    { _id: id, userId: userId },
+    { active: false },
+    { new: true }
+  );
+  
+  if (!medication) {
+    return next(new AppError('Medication not found', 404));
   }
-});
+  
+  res.json({
+    status: 'success',
+    message: 'Medication deleted successfully'
+  });
+}));
 
 export default router;

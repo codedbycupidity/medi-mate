@@ -1,4 +1,8 @@
-export const API_BASE_URL = 'http://localhost:3001/api';
+// API base URL should be configured per platform
+// Frontend: import.meta.env.VITE_API_URL
+// Mobile: Config.API_URL_DEV or Config.API_URL_PROD
+// Backend: process.env.API_URL
+export const API_BASE_URL = process.env.API_URL || '/api';
 
 export const API_ENDPOINTS = {
   AUTH: {

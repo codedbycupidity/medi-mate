@@ -5,14 +5,14 @@
   "dependencies": {
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
+    "@medimate/shared": "file:../shared",
     "axios": "^1.4.0",
     "date-fns": "^2.30.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.44.3",
     "react-hot-toast": "^2.4.1",
-    "react-router-dom": "^6.11.2",
-    "@medimate/shared": "file:../shared"
+    "react-router-dom": "^6.11.2"
   },
   "scripts": {
     "start": "react-scripts start",

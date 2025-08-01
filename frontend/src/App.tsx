@@ -1,5 +1,7 @@
-// frontend/src/App.js (Text-Only Component Placeholders)
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 
 // Placeholder Components - implement these later
 const Dashboard: React.FC = () => <div className="p-8 text-center text-brand-600">Dashboard</div>
@@ -10,36 +12,30 @@ const Settings: React.FC = () => <div className="p-8 text-center text-brand-600"
 const Calendar: React.FC = () => <div className="p-8 text-center text-brand-600">Calendar</div>
 const Analytics: React.FC = () => <div className="p-8 text-center text-brand-600">Analytics</div>
 const Notifications: React.FC = () => <div className="p-8 text-center text-brand-600">Notifications</div>
-const MedicationDetail: React.FC = () => <div className="p-8 text-center text-brand-600">MedicationDetail</div>
-const ReminderHistory: React.FC = () => <div className="p-8 text-center text-brand-600">ReminderHistory</div>
-const DoseTracker: React.FC = () => <div className="p-8 text-center text-brand-600">DoseTracker</div>
-const Reports: React.FC = () => <div className="p-8 text-center text-brand-600">Reports</div>
-const Help: React.FC = () => <div className="p-8 text-center text-brand-600">Help</div>
 
-type ViewType = 'dashboard' | 'medications' | 'reminders' | 'profile' | 'settings' | 'calendar' | 'analytics' | 'notifications' | 'medication-detail' | 'reminder-history' | 'dose-tracker' | 'reports' | 'help'
+// Protected Route Component
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isAuthenticated = localStorage.getItem('authToken') !== null;
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+};
 
-const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<ViewType>('dashboard')
+// Main Layout Component
+const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
 
-  // Simple view switcher - replace with proper routing later
-  const renderCurrentView = () => {
-    switch (currentView) {
-      case 'dashboard': return <Dashboard />
-      case 'medications': return <Medications />
-      case 'reminders': return <Reminders />
-      case 'profile': return <Profile />
-      case 'settings': return <Settings />
-      case 'calendar': return <Calendar />
-      case 'analytics': return <Analytics />
-      case 'notifications': return <Notifications />
-      case 'medication-detail': return <MedicationDetail />
-      case 'reminder-history': return <ReminderHistory />
-      case 'dose-tracker': return <DoseTracker />
-      case 'reports': return <Reports />
-      case 'help': return <Help />
-      default: return <Dashboard />
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
-  }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen bg-brand-50">
@@ -50,49 +46,38 @@ const App: React.FC = () => {
             <h1 className="text-3xl font-bold text-dark-900">
               MediMate
             </h1>
-            <nav className="hidden md:flex space-x-6">
-              <button
-                onClick={() => setCurrentView('dashboard')}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${currentView === 'dashboard' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
-                  }`}
-              >
+            <nav className="hidden md:flex space-x-6 items-center">
+              <a href="/dashboard" className="px-3 py-2 text-sm font-medium text-brand-700 hover:text-dark-900">
                 Dashboard
-              </button>
-              <button
-                onClick={() => setCurrentView('medications')}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${currentView === 'medications' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
-                  }`}
-              >
+              </a>
+              <a href="/medications" className="px-3 py-2 text-sm font-medium text-brand-700 hover:text-dark-900">
                 Medications
-              </button>
-              <button
-                onClick={() => setCurrentView('reminders')}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${currentView === 'reminders' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
-                  }`}
-              >
+              </a>
+              <a href="/reminders" className="px-3 py-2 text-sm font-medium text-brand-700 hover:text-dark-900">
                 Reminders
-              </button>
-              <button
-                onClick={() => setCurrentView('calendar')}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${currentView === 'calendar' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
-                  }`}
-              >
+              </a>
+              <a href="/calendar" className="px-3 py-2 text-sm font-medium text-brand-700 hover:text-dark-900">
                 Calendar
-              </button>
-              <button
-                onClick={() => setCurrentView('analytics')}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${currentView === 'analytics' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
-                  }`}
-              >
+              </a>
+              <a href="/analytics" className="px-3 py-2 text-sm font-medium text-brand-700 hover:text-dark-900">
                 Analytics
-              </button>
-              <button
-                onClick={() => setCurrentView('profile')}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${currentView === 'profile' ? 'text-dark-900' : 'text-brand-700 hover:text-dark-900'
-                  }`}
-              >
+              </a>
+              <a href="/profile" className="px-3 py-2 text-sm font-medium text-brand-700 hover:text-dark-900">
                 Profile
-              </button>
+              </a>
+              <div className="ml-4 flex items-center space-x-4">
+                {user && (
+                  <span className="text-sm text-gray-600">
+                    Welcome, {user.name}
+                  </span>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-2 text-sm font-medium text-red-600 hover:text-red-800"
+                >
+                  Logout
+                </button>
+              </div>
             </nav>
           </div>
         </div>
@@ -100,58 +85,128 @@ const App: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto">
-        {renderCurrentView()}
+        {children}
       </main>
-
-      {/* Quick Action Buttons */}
-      <div className="fixed bottom-6 right-6 space-y-3">
-
-        <button
-          onClick={() => setCurrentView('notifications')}
-          className="bg-accent-800 hover:bg-accent-900 text-white p-3 rounded-full shadow-lg transition-all hover:scale-105 text-sm"
-          title="Notifications"
-        >
-          !
-        </button>
-      </div>
 
       {/* Bottom Navigation (Mobile) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-brand-200 px-4 py-2">
         <div className="flex justify-around">
-          <button
-            onClick={() => setCurrentView('dashboard')}
-            className="flex flex-col items-center py-2"
-          >
+          <a href="/dashboard" className="flex flex-col items-center py-2">
             <span className="text-sm font-medium text-brand-600">Dashboard</span>
-          </button>
-          <button
-            onClick={() => setCurrentView('medications')}
-            className="flex flex-col items-center py-2"
-          >
+          </a>
+          <a href="/medications" className="flex flex-col items-center py-2">
             <span className="text-sm font-medium text-brand-600">Medications</span>
-          </button>
-          <button
-            onClick={() => setCurrentView('reminders')}
-            className="flex flex-col items-center py-2"
-          >
+          </a>
+          <a href="/reminders" className="flex flex-col items-center py-2">
             <span className="text-sm font-medium text-brand-600">Reminders</span>
-          </button>
-          <button
-            onClick={() => setCurrentView('calendar')}
-            className="flex flex-col items-center py-2"
-          >
+          </a>
+          <a href="/calendar" className="flex flex-col items-center py-2">
             <span className="text-sm font-medium text-brand-600">Calendar</span>
-          </button>
-          <button
-            onClick={() => setCurrentView('profile')}
-            className="flex flex-col items-center py-2"
-          >
+          </a>
+          <a href="/profile" className="flex flex-col items-center py-2">
             <span className="text-sm font-medium text-brand-600">Profile</span>
-          </button>
+          </a>
         </div>
       </nav>
     </div>
-  )
-}
+  );
+};
 
-export default App
+const App: React.FC = () => {
+  return (
+    <Router>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        
+        {/* Protected Routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Dashboard />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/medications"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Medications />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reminders"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Reminders />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Calendar />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Analytics />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Profile />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Settings />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Notifications />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Default Route */}
+        <Route path="/" element={<Navigate to="/dashboard" />} />
+      </Routes>
+    </Router>
+  );
+};
+
+export default App;
