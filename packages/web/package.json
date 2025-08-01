@@ -1,11 +1,12 @@
 {
-  "name": "medimate-frontend",
+  "name": "@medimate/web",
   "version": "1.0.0",
   "private": true,
   "dependencies": {
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
     "@medimate/shared": "file:../shared",
+    "@medimate/components": "file:../components",
     "axios": "^1.4.0",
     "date-fns": "^2.30.0",
     "react": "^18.2.0",

@@ -21,9 +21,10 @@ setup: ## Initial project setup (run this first!)
 	fi
 	@echo "📦 Installing dependencies..."
 	@cd backend && npm install
-	@cd frontend && npm install
-	@cd mobile && npm install
-	@cd shared && npm install && npm run build
+	@cd packages/web && npm install
+	@cd packages/mobile && npm install
+	@cd packages/shared && npm install && npm run build
+	@cd packages/components && npm install && npm run build
 	@echo "✅ Setup complete!"
 
 .PHONY: dev
@@ -138,16 +139,16 @@ frontend: ## Start only Frontend service locally
 		echo "❌ .env.dev not found! Run 'make setup' first"; \
 		exit 1; \
 	fi
-	@if [ ! -f frontend/.env ]; then \
-		echo "📝 Creating frontend/.env from .env.dev..."; \
-		grep -E "^(REACT_APP_)" .env.dev > frontend/.env; \
+	@if [ ! -f packages/web/.env ]; then \
+		echo "📝 Creating packages/web/.env from .env.dev..."; \
+		grep -E "^(REACT_APP_)" .env.dev > packages/web/.env; \
 	fi
-	@cd frontend && npm start
+	@cd packages/web && npm start
 
 .PHONY: mobile-metro
 mobile-metro: ## Start React Native Metro bundler
 	@echo "📱 Starting Metro bundler..."
-	@cd mobile && npm start
+	@cd packages/mobile && npm start
 
 # Mobile commands
 .PHONY: ios
@@ -157,11 +158,11 @@ ios: ## Run on iOS Simulator (iPhone 16)
 		echo "❌ .env.dev not found! Run 'make setup' first"; \
 		exit 1; \
 	fi
-	@if [ ! -f mobile/.env ]; then \
-		echo "📝 Creating mobile/.env from .env.dev..."; \
-		grep -E "^(API_URL_DEV|API_URL_PROD)" .env.dev > mobile/.env; \
+	@if [ ! -f packages/mobile/.env ]; then \
+		echo "📝 Creating packages/mobile/.env from .env.dev..."; \
+		grep -E "^(API_URL_DEV|API_URL_PROD)" .env.dev > packages/mobile/.env; \
 	fi
-	@cd mobile && npx react-native run-ios --simulator="iPhone 16"
+	@cd packages/mobile && npx react-native run-ios --simulator="iPhone 16"
 
 .PHONY: android
 android: ## Run on Android Emulator
@@ -170,33 +171,33 @@ android: ## Run on Android Emulator
 		echo "❌ .env.dev not found! Run 'make setup' first"; \
 		exit 1; \
 	fi
-	@if [ ! -f mobile/.env ]; then \
-		echo "📝 Creating mobile/.env from .env.dev..."; \
-		grep -E "^(API_URL_DEV|API_URL_PROD)" .env.dev > mobile/.env; \
+	@if [ ! -f packages/mobile/.env ]; then \
+		echo "📝 Creating packages/mobile/.env from .env.dev..."; \
+		grep -E "^(API_URL_DEV|API_URL_PROD)" .env.dev > packages/mobile/.env; \
 	fi
-	@cd mobile && npx react-native run-android
+	@cd packages/mobile && npx react-native run-android
 
 .PHONY: ios-device
 ios-device: ## Run on physical iOS device
 	@echo "📱 Running on physical iPhone..."
 	@echo "📝 Make sure your device is connected and trusted"
-	@cd mobile && npx react-native run-ios --device
+	@cd packages/mobile && npx react-native run-ios --device
 
 .PHONY: android-device
 android-device: ## Run on physical Android device
 	@echo "🤖 Running on physical Android device..."
 	@echo "📝 Make sure USB debugging is enabled"
-	@cd mobile && npx react-native run-android
+	@cd packages/mobile && npx react-native run-android
 
 .PHONY: ios-clean
 ios-clean: ## Clean iOS build
 	@echo "🧹 Cleaning iOS build..."
-	@cd mobile/ios && xcodebuild clean -workspace mobile.xcworkspace -scheme mobile
+	@cd packages/mobile/ios && xcodebuild clean -workspace mobile.xcworkspace -scheme mobile
 
 .PHONY: ios-pods
 ios-pods: ## Install iOS dependencies (CocoaPods)
 	@echo "📱 Installing iOS dependencies..."
-	@cd mobile/ios && pod install
+	@cd packages/mobile/ios && pod install
 
 .PHONY: ios-rebuild
 ios-rebuild: ios-clean ios-pods ios ## Clean and rebuild iOS app
@@ -204,20 +205,20 @@ ios-rebuild: ios-clean ios-pods ios ## Clean and rebuild iOS app
 .PHONY: android-clean
 android-clean: ## Clean Android build
 	@echo "🧹 Cleaning Android build..."
-	@cd mobile/android && ./gradlew clean
+	@cd packages/mobile/android && ./gradlew clean
 
 .PHONY: mobile-clean
 mobile-clean: ## Clean React Native cache
 	@echo "🧹 Cleaning React Native cache..."
-	@cd mobile && npx react-native-clean-project
+	@cd packages/mobile && npx react-native-clean-project
 
 # Testing commands
 .PHONY: test
 test: ## Run all tests
 	@echo "🧪 Running tests..."
 	@cd backend && npm test
-	@cd frontend && npm test -- --run
-	@cd mobile && npm test
+	@cd packages/web && npm test -- --run
+	@cd packages/mobile && npm test
 
 .PHONY: test-backend
 test-backend: ## Run Backend tests only
@@ -227,12 +228,12 @@ test-backend: ## Run Backend tests only
 .PHONY: test-frontend
 test-frontend: ## Run Frontend tests only
 	@echo "🧪 Running Frontend tests..."
-	@cd frontend && npm test -- --run
+	@cd packages/web && npm test -- --run
 
 .PHONY: test-mobile
 test-mobile: ## Run Mobile tests only
 	@echo "🧪 Running Mobile tests..."
-	@cd mobile && npm test
+	@cd packages/mobile && npm test
 
 .PHONY: test-watch
 test-watch: ## Run tests in watch mode
@@ -242,9 +243,9 @@ test-watch: ## Run tests in watch mode
 	if [ "$$choice" = "1" ]; then \
 		cd backend && npm test -- --watch; \
 	elif [ "$$choice" = "2" ]; then \
-		cd frontend && npm test; \
+		cd packages/web && npm test; \
 	elif [ "$$choice" = "3" ]; then \
-		cd mobile && npm test -- --watch; \
+		cd packages/mobile && npm test -- --watch; \
 	fi
 
 # Code quality
@@ -252,15 +253,15 @@ test-watch: ## Run tests in watch mode
 lint: ## Run linters on all code
 	@echo "🔍 Running linters..."
 	@cd backend && npm run lint || true
-	@cd frontend && npm run lint || true
-	@cd mobile && npm run lint || true
+	@cd packages/web && npm run lint || true
+	@cd packages/mobile && npm run lint || true
 
 .PHONY: typecheck
 typecheck: ## Run TypeScript type checking
 	@echo "🔍 Type checking..."
 	@cd backend && npm run typecheck
-	@cd frontend && npm run typecheck
-	@cd mobile && npm run typecheck
+	@cd packages/web && npm run typecheck
+	@cd packages/mobile && npm run typecheck
 
 # Database commands
 .PHONY: db-shell
@@ -285,15 +286,15 @@ db-reset: ## Reset database (drop all data)
 .PHONY: build
 build: ## Build all projects
 	@echo "📦 Building all projects..."
-	@cd shared && npm run build
+	@cd packages/shared && npm run build
 	@cd backend && npm run build
-	@cd frontend && npm run build
+	@cd packages/web && npm run build
 	@echo "✅ Build complete!"
 
 .PHONY: build-shared
 build-shared: ## Build shared package
 	@echo "📦 Building shared package..."
-	@cd shared && npm run build
+	@cd packages/shared && npm run build
 
 .PHONY: build-backend
 build-backend: ## Build Backend
@@ -303,26 +304,26 @@ build-backend: ## Build Backend
 .PHONY: build-frontend
 build-frontend: ## Build Frontend
 	@echo "📦 Building Frontend..."
-	@cd frontend && npm run build
+	@cd packages/web && npm run build
 
 .PHONY: build-mobile-ios
 build-mobile-ios: ## Build iOS app
 	@echo "📦 Building iOS app..."
-	@cd mobile && npx react-native build-ios
+	@cd packages/mobile && npx react-native build-ios
 
 .PHONY: build-mobile-android
 build-mobile-android: ## Build Android APK
 	@echo "📦 Building Android APK..."
-	@cd mobile && cd android && ./gradlew assembleRelease
+	@cd packages/mobile && cd android && ./gradlew assembleRelease
 
 # Installation commands
 .PHONY: install
 install: ## Install all dependencies
 	@echo "📦 Installing all dependencies..."
-	@cd shared && npm install
+	@cd packages/shared && npm install
 	@cd backend && npm install
-	@cd frontend && npm install
-	@cd mobile && npm install
+	@cd packages/web && npm install
+	@cd packages/mobile && npm install
 
 .PHONY: install-backend
 install-backend: ## Install Backend dependencies
@@ -332,17 +333,17 @@ install-backend: ## Install Backend dependencies
 .PHONY: install-frontend
 install-frontend: ## Install Frontend dependencies
 	@echo "📦 Installing Frontend dependencies..."
-	@cd frontend && npm install
+	@cd packages/web && npm install
 
 .PHONY: install-mobile
 install-mobile: ## Install Mobile dependencies
 	@echo "📦 Installing Mobile dependencies..."
-	@cd mobile && npm install
+	@cd packages/mobile && npm install
 
 .PHONY: install-shared
 install-shared: ## Install Shared dependencies
 	@echo "📦 Installing Shared dependencies..."
-	@cd shared && npm install
+	@cd packages/shared && npm install
 
 # Environment commands
 .PHONY: env-check
@@ -405,7 +406,7 @@ install-hooks: ## Install git hooks
 .PHONY: clean-env
 clean-env: ## Remove all generated .env files (keeps .env.dev and .env.prod)
 	@echo "🧹 Cleaning generated .env files..."
-	@rm -f backend/.env frontend/.env mobile/.env
+	@rm -f backend/.env packages/web/.env packages/mobile/.env
 	@echo "✅ Cleaned generated env files"
 
 .PHONY: prod

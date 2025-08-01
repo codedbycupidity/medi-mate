@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 // import { API_BASE_URL, API_ENDPOINTS } from '@medimate/shared';
 
 // Get API URL from environment variable
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL ;
 console.log('[API Service] Using API_BASE_URL:', API_BASE_URL);
 const API_ENDPOINTS = {
   AUTH: {

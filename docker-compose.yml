@@ -43,7 +43,8 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
     volumes:
       - ./backend:/app
-      - ./shared:/shared
+      - ./packages/shared:/shared
+      - ./packages/components:/components
       - /app/node_modules
     depends_on:
       - database
@@ -54,7 +55,7 @@ services:
   # Frontend React App
   frontend:
     build:
-      context: ./frontend
+      context: ./packages/web
       dockerfile: Dockerfile.dev
     container_name: medimate_frontend
     ports:
@@ -66,8 +67,9 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - FAST_REFRESH=true
     volumes:
-      - ./frontend:/app
-      - ./shared:/shared
+      - ./packages/web:/app
+      - ./packages/shared:/shared
+      - ./packages/components:/components
       - /app/node_modules
     depends_on:
       - backend
@@ -91,7 +93,7 @@ services:
   # React Native Metro bundler (for development)
   mobile:
     build:
-      context: ./mobile
+      context: ./packages/mobile
       dockerfile: Dockerfile.dev
     container_name: medimate_mobile
     ports:
@@ -99,8 +101,9 @@ services:
     environment:
       - API_URL_DEV=${MOBILE_API_URL:-http://backend:3001}
     volumes:
-      - ./mobile:/app
-      - ./shared:/shared
+      - ./packages/mobile:/app
+      - ./packages/shared:/shared
+      - ./packages/components:/components
       - /app/node_modules
     depends_on:
       - backend

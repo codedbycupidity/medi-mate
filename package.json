@@ -1,0 +1,30 @@
+{
+  "name": "medimate",
+  "version": "1.0.0",
+  "description": "MediMate - Medication Management System",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "make dev",
+    "build": "npm run build:shared && npm run build:components && npm run build:backend && npm run build:web",
+    "build:shared": "npm run build --workspace=@medimate/shared",
+    "build:components": "npm run build --workspace=@medimate/components",
+    "build:backend": "npm run build --workspace=backend",
+    "build:web": "npm run build --workspace=@medimate/web",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "clean": "npm run clean --workspaces --if-present",
+    "install:all": "npm install"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
