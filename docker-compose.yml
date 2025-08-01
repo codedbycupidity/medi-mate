@@ -1,19 +1,18 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # MongoDB Database
   database:
-    image: postgres:15-alpine
+    image: mongo:7.0
     container_name: medimate_db
     environment:
-      POSTGRES_DB: medimate
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: devpass
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: adminpass
+      MONGO_INITDB_DATABASE: medimate
     ports:
-      - "5432:5432"
+      - "27017:27017"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mongo_data:/data/db
     networks:
       - medimate_network
 
@@ -36,9 +35,10 @@ services:
       - "3001:3001"
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=postgresql://dev:devpass@database:5432/medimate
+      - MONGODB_URI=mongodb://admin:adminpass@database:27017/medimate?authSource=admin
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=dev_secret_key
+      - PORT=3001
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -82,8 +82,28 @@ services:
     networks:
       - medimate_network
 
+  # React Native Metro bundler (for development)
+  mobile:
+    build:
+      context: ./mobile
+      dockerfile: Dockerfile.dev
+    container_name: medimate_mobile
+    ports:
+      - "8081:8081"  # Metro bundler port
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001
+    volumes:
+      - ./mobile:/app
+      - ./shared:/shared
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - medimate_network
+    command: npx react-native start
+
 volumes:
-  postgres_data:
+  mongo_data:
 
 networks:
   medimate_network:

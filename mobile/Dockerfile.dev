@@ -1,0 +1,25 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies for React Native
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    bash
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the application
+COPY . .
+
+# Expose Metro bundler port
+EXPOSE 8081
+
+# Start Metro bundler
+CMD ["npx", "react-native", "start", "--host", "0.0.0.0"]
