@@ -41,6 +41,7 @@ services:
       - PORT=3001
     volumes:
       - ./backend:/app
+      - ./shared:/shared
       - /app/node_modules
     depends_on:
       - database
@@ -62,6 +63,7 @@ services:
       - FAST_REFRESH=true
     volumes:
       - ./frontend:/app
+      - ./shared:/shared
       - /app/node_modules
     depends_on:
       - backend

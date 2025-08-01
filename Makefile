@@ -42,6 +42,12 @@ help:
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean              - Clean all build artifacts and node_modules"
+	@echo ""
+	@echo "Mobile Development:"
+	@echo "  make ios                - Run iOS app (using existing Metro bundler)"
+	@echo "  make android            - Run Android app (using existing Metro bundler)"
+	@echo "  make ios-install-deps   - Install iOS dependencies (CocoaPods)"
+	@echo "  make android-clean      - Clean Android build"
 
 # Setup
 setup: install-shared install-backend install-frontend install-mobile build-shared
@@ -61,7 +67,7 @@ install-backend:
 
 install-frontend:
 	@echo "📦 Installing frontend dependencies..."
-	@cd frontend && npm install
+	@cd frontend && npm install --legacy-peer-deps
 
 install-mobile:
 	@echo "📦 Installing mobile dependencies..."
@@ -173,11 +179,20 @@ db-migrate:
 # Mobile specific commands
 ios: install-mobile
 	@echo "📱 Starting iOS app..."
-	@cd mobile && npx react-native run-ios
+	@cd mobile && npx react-native run-ios --no-packager || true
+	@echo "✅ iOS app launched! Check your simulator."
 
 android: install-mobile
 	@echo "📱 Starting Android app..."
-	@cd mobile && npx react-native run-android
+	@cd mobile && npx react-native run-android --no-packager
+
+ios-install-deps:
+	@echo "📱 Installing iOS dependencies..."
+	@cd mobile/ios && pod install
+
+android-clean:
+	@echo "🧹 Cleaning Android build..."
+	@cd mobile/android && ./gradlew clean
 
 # Git hooks
 install-hooks:

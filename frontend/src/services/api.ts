@@ -1,5 +1,39 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { API_BASE_URL, API_ENDPOINTS } from '@medimate/shared';
+// import { API_BASE_URL, API_ENDPOINTS } from '@medimate/shared';
+
+// Temporary hardcoded values until shared package is properly linked
+const API_BASE_URL = 'http://localhost:3001/api';
+const API_ENDPOINTS = {
+  AUTH: {
+    LOGIN: '/auth/login',
+    REGISTER: '/auth/register',
+    LOGOUT: '/auth/logout',
+    REFRESH: '/auth/refresh',
+    ME: '/auth/me'
+  },
+  USERS: {
+    PROFILE: '/users/profile',
+    UPDATE_PROFILE: '/users/profile',
+    UPDATE_PASSWORD: '/users/password',
+    DELETE_ACCOUNT: '/users/account'
+  },
+  MEDICATIONS: {
+    LIST: '/medications',
+    CREATE: '/medications',
+    GET: (id: string) => `/medications/${id}`,
+    UPDATE: (id: string) => `/medications/${id}`,
+    DELETE: (id: string) => `/medications/${id}`,
+    SCHEDULE: (id: string) => `/medications/${id}/schedule`
+  },
+  REMINDERS: {
+    LIST: '/reminders',
+    CREATE: '/reminders',
+    GET: (id: string) => `/reminders/${id}`,
+    UPDATE: (id: string) => `/reminders/${id}`,
+    DELETE: (id: string) => `/reminders/${id}`,
+    ACKNOWLEDGE: (id: string) => `/reminders/${id}/acknowledge`
+  }
+};
 
 class ApiClient {
   private client: AxiosInstance;
