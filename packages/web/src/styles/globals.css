@@ -42,7 +42,7 @@
   --primary-foreground: 338 13% 15%;
   --secondary: 337 12% 30%; /* lighter dark-700 */
   --secondary-foreground: 340 25% 98%;
-  --muted: 337 12% 25%; /* lighter dark-800 */
+  --muted: 337 12% 35%; /* much lighter for input fields */
   --muted-foreground: 337 18% 65%;
   --accent: 339 85% 45%; /* accent-500 */
   --accent-foreground: 340 25% 98%;

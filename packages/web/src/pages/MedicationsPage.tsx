@@ -1,17 +1,26 @@
 import React, { useState, useEffect } from "react"
 import { Button, DataTable, ColumnDef } from "@medimate/components"
 import { MoreHorizontal, ArrowUpDown } from "lucide-react"
+import { useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../services/api'
+import { AddMedicationDialog } from '../components/AddMedicationDialog'
 
 // This type represents our medication data
 export type Medication = {
   id: string
+  _id?: string // MongoDB ID
   name: string
   dosage: string
+  unit: string
   frequency: string
-  time: string
-  remaining: number
-  nextDose: string
+  time?: string // Computed field for display
+  times: string[]
+  remaining?: number // Computed field based on quantity
+  nextDose?: string // Computed field
+  quantity?: number
+  startDate: string
+  prescribedBy?: string
+  instructions?: string
 }
 
 
@@ -34,44 +43,59 @@ export const columns: ColumnDef<Medication>[] = [
   {
     accessorKey: "dosage",
     header: "Dosage",
-    cell: ({ row }: { row: any }) => <div>{row.getValue("dosage")}</div>,
+    cell: ({ row }: { row: any }) => {
+      const dosage = row.getValue("dosage")
+      const unit = row.original.unit
+      return <div>{dosage} {unit}</div>
+    },
   },
   {
     accessorKey: "frequency",
     header: "Frequency",
-    cell: ({ row }: { row: any }) => <div>{row.getValue("frequency")}</div>,
+    cell: ({ row }: { row: any }) => {
+      const frequency = row.getValue("frequency") as string
+      const frequencyDisplay: Record<string, string> = {
+        once_daily: "Once Daily",
+        twice_daily: "Twice Daily",
+        three_times_daily: "3x Daily",
+        four_times_daily: "4x Daily",
+        as_needed: "As Needed",
+        weekly: "Weekly",
+        monthly: "Monthly",
+      }
+      return <div>{frequencyDisplay[frequency] || frequency}</div>
+    },
   },
   {
-    accessorKey: "time",
-    header: "Time",
-    cell: ({ row }: { row: any }) => <div className="font-mono text-sm">{row.getValue("time")}</div>,
+    accessorKey: "times",
+    header: "Times",
+    cell: ({ row }: { row: any }) => {
+      const times = row.getValue("times") as string[]
+      return <div className="font-mono text-sm">{times.join(", ")}</div>
+    },
   },
   {
-    accessorKey: "remaining",
+    accessorKey: "quantity",
     header: ({ column }: { column: any }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Remaining
+          Quantity
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
     },
     cell: ({ row }: { row: any }) => {
-      const remaining = row.getValue("remaining") as number
+      const quantity = row.getValue("quantity") as number | undefined
+      if (!quantity) return <div className="text-muted-foreground">—</div>
       return (
-        <div className={`font-medium ${remaining <= 15 ? "text-red-600" : ""}`}>
-          {remaining} pills
+        <div className={`font-medium ${quantity <= 15 ? "text-red-600" : ""}`}>
+          {quantity} pills
         </div>
       )
     },
-  },
-  {
-    accessorKey: "nextDose",
-    header: "Next Dose",
-    cell: ({ row }: { row: any }) => <div className="text-muted-foreground">{row.getValue("nextDose")}</div>,
   },
   {
     id: "actions",
@@ -97,10 +121,18 @@ export default function MedicationsPage() {
   const [medications, setMedications] = useState<Medication[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showAddDialog, setShowAddDialog] = useState(false)
+  const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     fetchMedications()
-  }, [])
+    
+    // Check if we're on /medications/add route
+    if (location.pathname === '/medications/add') {
+      setShowAddDialog(true)
+    }
+  }, [location.pathname])
 
   const fetchMedications = async () => {
     try {
@@ -126,8 +158,21 @@ export default function MedicationsPage() {
   }
 
   const handleAddMedication = () => {
-    // TODO: Implement add medication functionality
-    console.log("Add medication")
+    navigate('/medications/add')
+    setShowAddDialog(true)
+  }
+
+  const handleAddSuccess = () => {
+    fetchMedications() // Refresh the list
+    navigate('/medications') // Remove /add from URL
+  }
+  
+  const handleDialogChange = (open: boolean) => {
+    setShowAddDialog(open)
+    // Update URL based on dialog state
+    if (!open && location.pathname === '/medications/add') {
+      navigate('/medications')
+    }
   }
 
   if (loading) {
@@ -182,6 +227,12 @@ export default function MedicationsPage() {
       ) : (
         <DataTable columns={columns} data={medications} />
       )}
+      
+      <AddMedicationDialog
+        open={showAddDialog}
+        onOpenChange={handleDialogChange}
+        onSuccess={handleAddSuccess}
+      />
     </div>
   )
 }

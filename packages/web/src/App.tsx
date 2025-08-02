@@ -104,6 +104,16 @@ const App: React.FC = () => {
           }
         />
         <Route
+          path="/medications/add"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <MedicationsPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/reminders"
           element={
             <ProtectedRoute>
