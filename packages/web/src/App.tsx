@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import { ThemeProvider } from './components/providers/theme-provider';
+import { ThemeToggle } from './components/theme-toggle';
 
 // Placeholder Components - implement these later
-const Dashboard: React.FC = () => <div className="p-8 text-center text-brand-600">Dashboard</div>
-const Medications: React.FC = () => <div className="p-8 text-center text-brand-600">Medications</div>
-const Reminders: React.FC = () => <div className="p-8 text-center text-brand-600">Reminders</div>
-const Profile: React.FC = () => <div className="p-8 text-center text-brand-600">Profile</div>
-const Settings: React.FC = () => <div className="p-8 text-center text-brand-600">Settings</div>
-const Calendar: React.FC = () => <div className="p-8 text-center text-brand-600">Calendar</div>
-const Analytics: React.FC = () => <div className="p-8 text-center text-brand-600">Analytics</div>
-const Notifications: React.FC = () => <div className="p-8 text-center text-brand-600">Notifications</div>
+const Dashboard: React.FC = () => <div className="p-8 text-center text-foreground">Dashboard</div>
+const Medications: React.FC = () => <div className="p-8 text-center text-foreground">Medications</div>
+const Reminders: React.FC = () => <div className="p-8 text-center text-foreground">Reminders</div>
+const Profile: React.FC = () => <div className="p-8 text-center text-foreground">Profile</div>
+const Settings: React.FC = () => <div className="p-8 text-center text-foreground">Settings</div>
+const Calendar: React.FC = () => <div className="p-8 text-center text-foreground">Calendar</div>
+const Analytics: React.FC = () => <div className="p-8 text-center text-foreground">Analytics</div>
+const Notifications: React.FC = () => <div className="p-8 text-center text-foreground">Notifications</div>
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -38,39 +40,40 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-brand-50">
+    <div className="min-h-screen bg-background">
       {/* Header Navigation */}
-      <header className="bg-white shadow-sm border-b border-brand-300">
+      <header className="bg-card shadow-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <h1 className="text-3xl font-bold text-dark-900">
+            <h1 className="text-3xl font-bold text-foreground">
               MediMate
             </h1>
             <nav className="hidden md:flex space-x-6 items-center">
-              <a href="/dashboard" className="px-3 py-2 text-sm font-medium text-brand-700 hover:text-dark-900">
+              <a href="/dashboard" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
                 Dashboard
               </a>
-              <a href="/medications" className="px-3 py-2 text-sm font-medium text-brand-700 hover:text-dark-900">
+              <a href="/medications" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
                 Medications
               </a>
-              <a href="/reminders" className="px-3 py-2 text-sm font-medium text-brand-700 hover:text-dark-900">
+              <a href="/reminders" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
                 Reminders
               </a>
-              <a href="/calendar" className="px-3 py-2 text-sm font-medium text-brand-700 hover:text-dark-900">
+              <a href="/calendar" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
                 Calendar
               </a>
-              <a href="/analytics" className="px-3 py-2 text-sm font-medium text-brand-700 hover:text-dark-900">
+              <a href="/analytics" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
                 Analytics
               </a>
-              <a href="/profile" className="px-3 py-2 text-sm font-medium text-brand-700 hover:text-dark-900">
+              <a href="/profile" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
                 Profile
               </a>
               <div className="ml-4 flex items-center space-x-4">
                 {user && (
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-muted-foreground">
                     Welcome, {user.name}
                   </span>
                 )}
+                <ThemeToggle />
                 <button
                   onClick={handleLogout}
                   className="px-3 py-2 text-sm font-medium text-red-600 hover:text-red-800"
@@ -89,22 +92,22 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </main>
 
       {/* Bottom Navigation (Mobile) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-brand-200 px-4 py-2">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border px-4 py-2">
         <div className="flex justify-around">
           <a href="/dashboard" className="flex flex-col items-center py-2">
-            <span className="text-sm font-medium text-brand-600">Dashboard</span>
+            <span className="text-sm font-medium text-muted-foreground">Dashboard</span>
           </a>
           <a href="/medications" className="flex flex-col items-center py-2">
-            <span className="text-sm font-medium text-brand-600">Medications</span>
+            <span className="text-sm font-medium text-muted-foreground">Medications</span>
           </a>
           <a href="/reminders" className="flex flex-col items-center py-2">
-            <span className="text-sm font-medium text-brand-600">Reminders</span>
+            <span className="text-sm font-medium text-muted-foreground">Reminders</span>
           </a>
           <a href="/calendar" className="flex flex-col items-center py-2">
-            <span className="text-sm font-medium text-brand-600">Calendar</span>
+            <span className="text-sm font-medium text-muted-foreground">Calendar</span>
           </a>
           <a href="/profile" className="flex flex-col items-center py-2">
-            <span className="text-sm font-medium text-brand-600">Profile</span>
+            <span className="text-sm font-medium text-muted-foreground">Profile</span>
           </a>
         </div>
       </nav>
@@ -114,7 +117,8 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const App: React.FC = () => {
   return (
-    <Router>
+    <ThemeProvider defaultTheme="dark">
+      <Router>
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
@@ -205,7 +209,8 @@ const App: React.FC = () => {
         {/* Default Route */}
         <Route path="/" element={<Navigate to="/dashboard" />} />
       </Routes>
-    </Router>
+      </Router>
+    </ThemeProvider>
   );
 };
 

@@ -1,15 +1,19 @@
 import React from 'react';
 import SignupForm from '../components/auth/SignupForm';
+import { ThemeToggle } from '../components/theme-toggle';
 
 const SignupPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-extrabold text-dark-900 mb-2">
+          <h1 className="text-4xl font-extrabold text-foreground mb-2">
             MediMate
           </h1>
-          <p className="text-lg text-brand-600">
+          <p className="text-lg text-muted-foreground">
             Your Personal Medication Assistant
           </p>
         </div>
