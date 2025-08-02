@@ -111,4 +111,5 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+export const api = apiClient; // Alias for easier usage
 export { API_ENDPOINTS };

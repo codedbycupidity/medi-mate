@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import MedicationsPage from './pages/MedicationsPage';
 import { ThemeProvider } from './components/providers/theme-provider';
 import { NavBar } from './components/NavBar';
 
 // Placeholder Components - implement these later
 const Dashboard: React.FC = () => <div className="p-8 text-center text-foreground">Dashboard</div>
-const Medications: React.FC = () => <div className="p-8 text-center text-foreground">Medications</div>
 const Reminders: React.FC = () => <div className="p-8 text-center text-foreground">Reminders</div>
 const Profile: React.FC = () => <div className="p-8 text-center text-foreground">Profile</div>
 const Settings: React.FC = () => <div className="p-8 text-center text-foreground">Settings</div>
@@ -98,7 +98,7 @@ const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <MainLayout>
-                <Medications />
+                <MedicationsPage />
               </MainLayout>
             </ProtectedRoute>
           }

@@ -11,6 +11,9 @@ RUN npm install --legacy-peer-deps
 # Copy source code
 COPY . .
 
+# Create symlinks for shared packages
+RUN mkdir -p /shared && mkdir -p /components
+
 EXPOSE 3000
 
 # Environment for hot reloading
