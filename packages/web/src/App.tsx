@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'r
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import { ThemeProvider } from './components/providers/theme-provider';
-import { ThemeToggle } from './components/theme-toggle';
+import { NavBar } from './components/NavBar';
 
 // Placeholder Components - implement these later
 const Dashboard: React.FC = () => <div className="p-8 text-center text-foreground">Dashboard</div>
@@ -42,49 +42,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header Navigation */}
-      <header className="bg-card shadow-sm border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <h1 className="text-3xl font-bold text-foreground">
-              MediMate
-            </h1>
-            <nav className="hidden md:flex space-x-6 items-center">
-              <a href="/dashboard" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                Dashboard
-              </a>
-              <a href="/medications" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                Medications
-              </a>
-              <a href="/reminders" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                Reminders
-              </a>
-              <a href="/calendar" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                Calendar
-              </a>
-              <a href="/analytics" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                Analytics
-              </a>
-              <a href="/profile" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                Profile
-              </a>
-              <div className="ml-4 flex items-center space-x-4">
-                {user && (
-                  <span className="text-sm text-muted-foreground">
-                    Welcome, {user.name}
-                  </span>
-                )}
-                <ThemeToggle />
-                <button
-                  onClick={handleLogout}
-                  className="px-3 py-2 text-sm font-medium text-red-600 hover:text-red-800"
-                >
-                  Logout
-                </button>
-              </div>
-            </nav>
-          </div>
-        </div>
-      </header>
+      <NavBar user={user} onLogout={handleLogout} />
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto">
