@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../services/api';
 import { LoginResponse } from '../../types/auth';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@medimate/components';
+import { Button } from '@medimate/components';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -51,71 +53,75 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
   return (
     <div className="w-full max-w-md">
-      <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg px-8 pt-6 pb-8 mb-4">
-        <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Login to MediMate</h2>
+      <Card>
+        <form onSubmit={handleSubmit}>
+          <CardHeader>
+            <CardTitle>Login to MediMate</CardTitle>
+            <CardDescription>Enter your credentials to access your account</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
         
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-            {error}
-          </div>
-        )}
+            {error && (
+              <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-md">
+                {error}
+              </div>
+            )}
 
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-            Email
-          </label>
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="email"
-            type="email"
-            name="email"
-            placeholder="Enter your email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-        </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="email">
+                Email
+              </label>
+              <input
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                id="email"
+                type="email"
+                name="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                disabled={isLoading}
+              />
+            </div>
 
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-            Password
-          </label>
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
-            id="password"
-            type="password"
-            name="password"
-            placeholder="Enter your password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-        </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="password">
+                Password
+              </label>
+              <input
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                id="password"
+                type="password"
+                name="password"
+                placeholder="Enter your password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                disabled={isLoading}
+              />
+            </div>
+          </CardContent>
 
-        <div className="flex items-center justify-between">
-          <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full disabled:opacity-50"
-            type="submit"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Logging in...' : 'Login'}
-          </button>
-        </div>
-
-        <div className="text-center mt-4">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <a
-              href="/signup"
-              className="text-blue-500 hover:text-blue-800 font-semibold"
+          <CardFooter className="flex flex-col space-y-4">
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading}
             >
-              Sign up
-            </a>
-          </p>
-        </div>
-      </form>
+              {isLoading ? 'Logging in...' : 'Login'}
+            </Button>
+            <p className="text-sm text-muted-foreground text-center">
+              Don't have an account?{' '}
+              <a
+                href="/signup"
+                className="text-primary hover:underline font-medium"
+              >
+                Sign up
+              </a>
+            </p>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
   );
 };

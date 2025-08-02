@@ -63,14 +63,13 @@ services:
     environment:
       # For local access from browser
       - REACT_APP_API_URL=http://localhost:3001/api
-      - REACT_APP_PROXY_TARGET=http://backend:3001
       - CHOKIDAR_USEPOLLING=true
       - FAST_REFRESH=true
     volumes:
       - ./packages/web:/app
       - ./packages/shared:/shared
       - ./packages/components:/components
-      - /app/node_modules
+      - medimate_web_node_modules:/app/node_modules
     depends_on:
       - backend
     networks:
@@ -113,6 +112,7 @@ services:
 
 volumes:
   mongo_data:
+  medimate_web_node_modules:
 
 networks:
   medimate_network:

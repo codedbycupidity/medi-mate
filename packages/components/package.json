@@ -10,8 +10,12 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-native": "^0.76.5"
+    "@radix-ui/react-slot": "^1.2.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "react": ">=18.0.0",
+    "react-native": ">=0.70.0",
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",

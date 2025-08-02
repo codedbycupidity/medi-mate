@@ -18,5 +18,9 @@ ENV CHOKIDAR_USEPOLLING=true
 ENV FAST_REFRESH=true
 ENV WDS_SOCKET_HOST=0.0.0.0
 
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Start React development server
-CMD ["npm", "start"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
