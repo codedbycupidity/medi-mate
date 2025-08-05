@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'r
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import MedicationsPage from './pages/MedicationsPage';
+import { OCRTestPage } from './components/OCRTestPage';
 import { ThemeProvider } from './components/providers/theme-provider';
 import { NavBar } from './components/NavBar';
 
@@ -169,6 +170,18 @@ const App: React.FC = () => {
             <ProtectedRoute>
               <MainLayout>
                 <Notifications />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* OCR Test Route - for debugging */}
+        <Route
+          path="/test-ocr"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <OCRTestPage />
               </MainLayout>
             </ProtectedRoute>
           }

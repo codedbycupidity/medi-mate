@@ -19,6 +19,7 @@ import {
 } from '@medimate/components'
 import { api } from '../services/api'
 import toast from 'react-hot-toast'
+import { PrescriptionUpload } from './PrescriptionUpload'
 
 interface AddMedicationDialogProps {
   open: boolean
@@ -154,6 +155,19 @@ export function AddMedicationDialog({
     }
   }, [formData.frequency])
 
+  // Handle OCR data extraction
+  const handlePrescriptionData = (extractedData: Partial<typeof formData>) => {
+    console.log('🔍 [Form Debug] Received OCR data in AddMedicationDialog:', extractedData)
+    
+    const updatedData = {
+      ...formData,
+      ...extractedData
+    }
+    
+    console.log('🔍 [Form Debug] Updated form data:', updatedData)
+    setFormData(updatedData)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -166,15 +180,32 @@ export function AddMedicationDialog({
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
+            <PrescriptionUpload onDataExtracted={handlePrescriptionData} />
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  Or enter manually
+                </span>
+              </div>
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="name">Medication Name *</Label>
               <Input
                 id="name"
-                placeholder="e.g., Aspirin"
+                placeholder="e.g., Aspirin, Lisinopril, Metformin"
                 value={formData.name}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
                 required
               />
+              {!formData.name && (
+                <p className="text-xs text-muted-foreground">
+                  Common formats: Drug name (e.g., Lisinopril), Brand name (e.g., Zestril)
+                </p>
+              )}
             </div>
             
             <div className="grid grid-cols-2 gap-4">

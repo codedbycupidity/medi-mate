@@ -41,6 +41,7 @@ services:
       - PORT=3001
       - FRONTEND_URL=http://frontend:3000
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - SIMPLETEX_API_KEY=${SIMPLETEX_API_KEY}
     volumes:
       - ./backend:/app
       - ./packages/shared:/shared

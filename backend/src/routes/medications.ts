@@ -3,8 +3,12 @@ import Medication from '../models/Medication';
 import { authenticate } from '../middleware/auth';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
+import ocrRouter from './medications-ocr';
 
 const router = express.Router();
+
+// Mount OCR sub-router
+router.use('/', ocrRouter);
 
 // Extended Request interface for authenticated routes
 interface AuthRequest extends Request {
