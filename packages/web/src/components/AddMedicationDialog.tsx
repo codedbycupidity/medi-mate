@@ -53,6 +53,12 @@ export function AddMedicationDialog({
   onSuccess,
 }: AddMedicationDialogProps) {
   const [loading, setLoading] = useState(false)
+  const [checkingDuplicate, setCheckingDuplicate] = useState(false)
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    show: boolean
+    existingMedication?: any
+    similarity?: number
+  }>({ show: false })
   const [formData, setFormData] = useState({
     name: '',
     dosage: '',
@@ -65,7 +71,36 @@ export function AddMedicationDialog({
     prescribedBy: '',
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const checkForDuplicate = async () => {
+    if (!formData.name || !formData.dosage) return
+    
+    try {
+      setCheckingDuplicate(true)
+      const response = await api.post('/medications/check-duplicate', {
+        name: formData.name,
+        dosage: formData.dosage,
+        unit: formData.unit,
+        frequency: formData.frequency,
+        instructions: formData.instructions,
+      })
+      
+      if (response.data.isDuplicate) {
+        setDuplicateWarning({
+          show: true,
+          existingMedication: response.data.existingMedication,
+          similarity: response.data.similarity,
+        })
+      } else {
+        setDuplicateWarning({ show: false })
+      }
+    } catch (error) {
+      console.error('Failed to check for duplicates:', error)
+    } finally {
+      setCheckingDuplicate(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent, force: boolean = false) => {
     e.preventDefault()
     
     if (!formData.name || !formData.dosage) {
@@ -76,12 +111,13 @@ export function AddMedicationDialog({
     try {
       setLoading(true)
       
-      await api.post('/medications', {
+      const response = await api.post('/medications', {
         ...formData,
         quantity: formData.quantity ? parseInt(formData.quantity) : undefined,
         startDate: new Date(formData.startDate),
       })
       
+      console.log('Medication created:', response)
       toast.success('Medication added successfully')
       onSuccess()
       onOpenChange(false)
@@ -98,8 +134,23 @@ export function AddMedicationDialog({
         instructions: '',
         prescribedBy: '',
       })
+      setDuplicateWarning({ show: false })
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to add medication')
+      console.error('Error adding medication:', error)
+      console.error('Error response:', error.response)
+      
+      if (error.response?.status === 409) {
+        // Handle duplicate error
+        setDuplicateWarning({
+          show: true,
+          existingMedication: error.response.data.data?.existingMedication,
+          similarity: error.response.data.data?.similarity,
+        })
+        toast.error('This medication already exists. Click "Add Anyway" to add it anyway.')
+      } else {
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to add medication'
+        toast.error(errorMessage)
+      }
     } finally {
       setLoading(false)
     }
@@ -154,6 +205,20 @@ export function AddMedicationDialog({
     }
   }, [formData.frequency])
 
+  // Check for duplicates when name or dosage changes
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formData.name && formData.dosage) {
+        checkForDuplicate()
+      } else {
+        // Clear warning if fields are empty
+        setDuplicateWarning({ show: false })
+      }
+    }, 500) // Debounce for 500ms
+    
+    return () => clearTimeout(timer)
+  }, [formData.name, formData.dosage, formData.unit])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -175,6 +240,28 @@ export function AddMedicationDialog({
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
                 required
               />
+              {checkingDuplicate && (
+                <p className="text-sm text-muted-foreground">Checking for duplicates...</p>
+              )}
+              {duplicateWarning.show && (
+                <div className="p-3 mt-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Similar medication found:</strong>{' '}
+                    {duplicateWarning.existingMedication?.name}
+                    {duplicateWarning.existingMedication?.dosage && (
+                      <>
+                        {' '}
+                        {duplicateWarning.existingMedication.dosage}
+                        {duplicateWarning.existingMedication?.unit || ''}
+                      </>
+                    )}
+                    {duplicateWarning.similarity && ` (${Math.round(duplicateWarning.similarity * 100)}% match)`}
+                  </p>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    You may already be tracking this medication. You can still add it if needed.
+                  </p>
+                </div>
+              )}
             </div>
             
             <div className="grid grid-cols-2 gap-4">
@@ -321,8 +408,12 @@ export function AddMedicationDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Adding...' : 'Add Medication'}
+            <Button 
+              type="submit" 
+              disabled={loading || checkingDuplicate}
+              variant={duplicateWarning.show ? 'destructive' : 'default'}
+            >
+              {loading ? 'Adding...' : duplicateWarning.show ? 'Add Anyway' : 'Add Medication'}
             </Button>
           </DialogFooter>
         </form>

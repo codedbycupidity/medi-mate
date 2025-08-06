@@ -16,6 +16,7 @@ export interface IMedication extends Document {
   quantity?: number;
   prescribedBy?: string;
   active: boolean;
+  embeddingIndexed?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -80,6 +81,10 @@ const medicationSchema = new Schema<IMedication>({
   active: {
     type: Boolean,
     default: true
+  },
+  embeddingIndexed: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

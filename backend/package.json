@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@medimate/shared": "file:../shared",
+    "@pinecone-database/pinecone": "^6.1.2",
     "@types/cookie-parser": "^1.4.9",
     "@types/date-fns": "^2.5.3",
     "@types/mongoose": "^5.11.96",

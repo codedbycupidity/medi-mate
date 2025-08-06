@@ -42,6 +42,8 @@ services:
       - FRONTEND_URL=http://frontend:3000
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - PINECONE_ENVIRONMENT=${PINECONE_ENVIRONMENT}
     volumes:
       - ./backend:/app
       - ./packages/shared:/shared
