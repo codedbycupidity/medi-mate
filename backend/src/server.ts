@@ -6,8 +6,10 @@ import dotenv from 'dotenv';
 import connectDB from './config/database';
 import medicationRoutes from './routes/medications';
 import authRoutes from './routes/auth';
+import reminderRoutes from './routes/reminders';
 import errorHandler from './middleware/errorHandler';
 import AppError from './utils/appError';
+import { initializeReminderGenerator, initializeReminderNotifier } from './jobs/reminderGenerator';
 
 dotenv.config();
 
@@ -50,6 +52,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/medications', medicationRoutes);
+app.use('/api/reminders', reminderRoutes);
 
 // Handle undefined routes
 app.all('*', (req, _res, next) => {
@@ -64,6 +67,10 @@ connectDB().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 MediMate API running on port ${PORT}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+    
+    // Initialize background jobs
+    initializeReminderGenerator();
+    initializeReminderNotifier();
   });
 }).catch((error) => {
   console.error('Failed to start server:', error);
