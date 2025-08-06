@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"
-import { Button, DataTable, ColumnDef } from "@medimate/components"
+import { DataTable, ColumnDef } from "@medimate/components"
+import { Button } from "../components/ui/button"
 import { MoreHorizontal, ArrowUpDown } from "lucide-react"
 import { useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../services/api'
@@ -139,15 +140,9 @@ export default function MedicationsPage() {
       setLoading(true)
       setError(null)
       
-      const response = await api.get<{
-        status: string;
-        results: number;
-        data: {
-          medications: Medication[];
-        };
-      }>('/medications')
+      const response = await api.get<Medication[]>('/medications')
       
-      setMedications(response.data.medications)
+      setMedications(response.data)
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch medications'
       setError(errorMessage)

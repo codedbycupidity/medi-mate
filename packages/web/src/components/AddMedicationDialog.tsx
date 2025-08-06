@@ -8,7 +8,6 @@ import {
   DialogTitle,
 } from '@medimate/components'
 import {
-  Button,
   Input,
   Label,
   Select,
@@ -17,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@medimate/components'
+import { Button } from './ui/button'
 import { api } from '../services/api'
 import toast from 'react-hot-toast'
 

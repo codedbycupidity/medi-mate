@@ -52,17 +52,19 @@ export function AIScheduleOptimizer({ medicationId, onScheduleApplied }: Props) 
           medicationId,
           userPreferences: getUserPreferences()
         });
-        setRecommendations([response.data.data]);
+        setRecommendations([response.data]);
       } else {
         // Optimize all medications
         const response = await api.post('/reminders/optimize-all', {
           userPreferences: getUserPreferences()
         });
-        setRecommendations(response.data.data.medications);
+        console.log('Response:', response);
+        setRecommendations(response.data?.medications || []);
       }
       toast.success('AI schedule recommendations generated!');
-    } catch (error) {
-      toast.error('Failed to generate AI recommendations');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to generate AI recommendations';
+      toast.error(errorMessage);
       console.error(error);
     } finally {
       setLoading(false);

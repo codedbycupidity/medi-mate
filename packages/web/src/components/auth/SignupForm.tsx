@@ -48,8 +48,8 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess }) => {
       });
       
       // Store token
-      localStorage.setItem('authToken', response.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.setItem('authToken', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.data.user));
       
       // Call success callback or navigate
       if (onSuccess) {
