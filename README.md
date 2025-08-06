@@ -11,6 +11,8 @@ MediMate is built as a fullstack application with:
 - **Mobile App**: React Native + TypeScript
 - **Shared Package**: Common types and utilities
 - **Infrastructure**: Docker Compose + Nginx
+- **Vector Database**: Pinecone for intelligent duplicate detection
+- **AI Integration**: OpenAI for smart scheduling and embeddings
 
 ### Project Structure
 
@@ -33,6 +35,9 @@ medi-mate/
 - Node.js 18+
 - Docker Desktop
 - Make (usually pre-installed on macOS/Linux)
+- API Keys:
+  - [OpenAI API Key](https://platform.openai.com/api-keys) - For AI features
+  - [Pinecone API Key](https://app.pinecone.io) - For vector database
 - For mobile development:
   - iOS: macOS with Xcode
   - Android: Android Studio
@@ -45,12 +50,20 @@ git clone https://github.com/yourusername/medi-mate.git
 cd medi-mate
 ```
 
-2. Run the setup:
+2. Configure environment variables:
+```bash
+cp .env.example .env.dev
+# Edit .env.dev and add your API keys:
+# - OPENAI_API_KEY (for AI features)
+# - PINECONE_API_KEY (for vector database)
+```
+
+3. Run the setup:
 ```bash
 make setup
 ```
 
-3. Start the development environment:
+4. Start the development environment:
 ```bash
 make dev
 ```
@@ -153,8 +166,10 @@ The backend API follows RESTful conventions:
 
 - `/api/auth/*` - Authentication endpoints
 - `/api/users/*` - User management
-- `/api/medications/*` - Medication CRUD
-- `/api/reminders/*` - Reminder management
+- `/api/medications/*` - Medication CRUD with duplicate detection
+- `/api/reminders/*` - AI-powered reminder management
+- `/api/medications/check-duplicate` - Check for duplicate medications
+- `/api/medications/similar/:name` - Find similar medications
 
 ## 🎨 Frontend Features
 
@@ -164,12 +179,29 @@ The backend API follows RESTful conventions:
 - Axios for API communication
 - React Hook Form for form handling
 - Date-fns for date manipulation
+- Real-time duplicate medication warnings
+- AI-powered medication scheduling
 
 ### Mobile Application
 - React Navigation for routing
 - Native UI components
 - AsyncStorage for local data
 - Push notifications support (planned)
+
+## 🧠 AI & Vector Database Features
+
+### Duplicate Detection
+- **Vector Embeddings**: Converts medication data into semantic vectors
+- **Similarity Search**: Uses Pinecone to find similar medications with 85% threshold
+- **Smart Matching**: Detects duplicates even with slight text variations
+- **User Isolation**: Each user's medications are stored in separate namespaces
+
+### AI-Powered Features
+- **Smart Scheduling**: AI generates optimal reminder times based on:
+  - Medication requirements (frequency, instructions)
+  - User's daily routine (wake/sleep times, meals)
+  - Medical best practices
+- **Batch Optimization**: Analyzes multiple medications to avoid interactions
 
 ## 🐳 Docker Services
 
