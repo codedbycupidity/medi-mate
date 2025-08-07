@@ -27,7 +27,7 @@ import {
 } from "../ui/dropdown-menu"
 import { Button } from "../ui/button"
 import { Input } from "@medimate/components"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, Trash2 } from "lucide-react"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -36,6 +36,7 @@ interface DataTableProps<TData, TValue> {
   onMarkAsSkipped?: (id: string) => void
   onEditReminder?: (reminder: TData) => void
   onDeleteReminder?: (id: string) => void
+  onBulkDelete?: (ids: string[]) => void
 }
 
 export function DataTable<TData, TValue>({
@@ -45,6 +46,7 @@ export function DataTable<TData, TValue>({
   onMarkAsSkipped,
   onEditReminder,
   onDeleteReminder,
+  onBulkDelete,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -76,6 +78,39 @@ export function DataTable<TData, TValue>({
     },
   })
 
+  const handleDeleteSelected = async () => {
+    const selectedRows = table.getFilteredSelectedRowModel().rows
+    console.log('Selected rows:', selectedRows.length)
+    if (selectedRows.length === 0) return
+    
+    if (window.confirm(`Are you sure you want to delete ${selectedRows.length} reminder(s)?`)) {
+      // Collect all IDs for bulk deletion
+      const ids = selectedRows
+        .map(row => {
+          const reminder = row.original as any
+          console.log('Row data:', reminder)
+          return reminder._id
+        })
+        .filter((id): id is string => !!id)
+      
+      console.log('IDs to delete:', ids)
+      
+      if (onBulkDelete && ids.length > 0) {
+        // Use bulk delete if available
+        console.log('Using bulk delete')
+        await onBulkDelete(ids)
+      } else if (onDeleteReminder) {
+        // Fallback to individual deletion
+        console.log('Using individual deletion')
+        for (const id of ids) {
+          await onDeleteReminder(id)
+        }
+      }
+      // Clear selection after deletion
+      setRowSelection({})
+    }
+  }
+
   return (
     <div className="w-full">
       <div className="flex items-center py-4 gap-2">
@@ -87,6 +122,16 @@ export function DataTable<TData, TValue>({
           }
           className="max-w-sm"
         />
+        {table.getFilteredSelectedRowModel().rows.length > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDeleteSelected}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete {table.getFilteredSelectedRowModel().rows.length} selected
+          </Button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline">

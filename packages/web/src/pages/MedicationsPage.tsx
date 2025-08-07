@@ -140,9 +140,11 @@ export default function MedicationsPage() {
       setLoading(true)
       setError(null)
       
-      const response = await api.get<Medication[]>('/medications')
+      const response = await api.get('/medications')
       
-      setMedications(response.data)
+      // Handle the response structure from the API
+      const medicationsData = response.data?.medications || response.data || []
+      setMedications(medicationsData)
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch medications'
       setError(errorMessage)

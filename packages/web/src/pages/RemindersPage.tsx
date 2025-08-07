@@ -9,6 +9,7 @@ import { Bell, Calendar, CheckCircle2, AlertCircle, Clock, Sparkles } from 'luci
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import { AIScheduleOptimizer } from '../components/reminders/AIScheduleOptimizer'
+import { EditReminderDialog } from '../components/reminders/EditReminderDialog'
 
 interface ReminderStats {
   total: number
@@ -33,6 +34,8 @@ export default function RemindersPage() {
   })
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('today')
+  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
 
   // Fetch reminders based on active tab
   const fetchReminders = async () => {
@@ -47,10 +50,17 @@ export default function RemindersPage() {
         api.get('/reminders/stats')
       ])
 
-      setReminders(allResponse.data)
-      setTodayReminders(todayResponse.data)
-      setUpcomingReminders(upcomingResponse.data)
-      setStats(statsResponse.data)
+      setReminders(allResponse.data || [])
+      setTodayReminders(todayResponse.data || [])
+      setUpcomingReminders(upcomingResponse.data || [])
+      setStats(statsResponse.data || {
+        total: 0,
+        taken: 0,
+        missed: 0,
+        skipped: 0,
+        pending: 0,
+        adherenceRate: 0
+      })
     } catch (error) {
       console.error('Error fetching reminders:', error)
       toast.error('Failed to load reminders')
@@ -108,6 +118,41 @@ export default function RemindersPage() {
     } catch (error) {
       console.error('Error deleting reminder:', error)
       toast.error('Failed to delete reminder')
+    }
+  }
+
+  // Bulk delete reminders
+  const bulkDeleteReminders = async (ids: string[]) => {
+    console.log('bulkDeleteReminders called with IDs:', ids)
+    try {
+      const response = await api.delete('/reminders/bulk', { data: { ids } })
+      console.log('Bulk delete response:', response)
+      toast.success(response.message || `${ids.length} reminder(s) deleted`)
+      await fetchReminders()
+    } catch (error) {
+      console.error('Error deleting reminders:', error)
+      toast.error('Failed to delete reminders')
+    }
+  }
+
+  // Edit reminder
+  const editReminder = (reminder: Reminder) => {
+    setEditingReminder(reminder)
+    setEditDialogOpen(true)
+  }
+
+  // Update reminder
+  const updateReminder = async (id: string, data: any) => {
+    try {
+      await api.put(`/reminders/${id}`, data)
+      toast.success('Reminder updated successfully')
+      setEditDialogOpen(false)
+      setEditingReminder(null)
+      fetchReminders()
+    } catch (error) {
+      console.error('Error updating reminder:', error)
+      toast.error('Failed to update reminder')
+      throw error
     }
   }
 
@@ -216,7 +261,9 @@ export default function RemindersPage() {
                 data={todayReminders}
                 onMarkAsTaken={markAsTaken}
                 onMarkAsSkipped={markAsSkipped}
+                onEditReminder={editReminder}
                 onDeleteReminder={deleteReminder}
+                onBulkDelete={bulkDeleteReminders}
               />
             </TabsContent>
             
@@ -226,7 +273,9 @@ export default function RemindersPage() {
                 data={upcomingReminders}
                 onMarkAsTaken={markAsTaken}
                 onMarkAsSkipped={markAsSkipped}
+                onEditReminder={editReminder}
                 onDeleteReminder={deleteReminder}
+                onBulkDelete={bulkDeleteReminders}
               />
             </TabsContent>
             
@@ -236,7 +285,9 @@ export default function RemindersPage() {
                 data={reminders}
                 onMarkAsTaken={markAsTaken}
                 onMarkAsSkipped={markAsSkipped}
+                onEditReminder={editReminder}
                 onDeleteReminder={deleteReminder}
+                onBulkDelete={bulkDeleteReminders}
               />
             </TabsContent>
           </Tabs>
@@ -245,6 +296,14 @@ export default function RemindersPage() {
 
       {/* AI Schedule Optimizer */}
       <AIScheduleOptimizer onScheduleApplied={fetchReminders} />
+      
+      {/* Edit Reminder Dialog */}
+      <EditReminderDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        reminder={editingReminder}
+        onSave={updateReminder}
+      />
     </div>
   )
 }

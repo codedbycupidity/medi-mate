@@ -28,7 +28,8 @@ interface Props {
 export function AIScheduleOptimizer({ medicationId, onScheduleApplied }: Props) {
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<MedicationSchedule[]>([]);
-  const [selectedMedication, setSelectedMedication] = useState<string | null>(null);
+  const [appliedMedications, setAppliedMedications] = useState<Set<string>>(new Set());
+  const [originalSchedules, setOriginalSchedules] = useState<Map<string, string[]>>(new Map());
 
   const getUserPreferences = () => {
     // In a real app, these would come from user settings
@@ -53,14 +54,36 @@ export function AIScheduleOptimizer({ medicationId, onScheduleApplied }: Props) 
           userPreferences: getUserPreferences()
         });
         setRecommendations([response.data]);
+        // Store original schedule ONLY if we don't already have it
+        // This preserves the true original even if regenerating
+        setOriginalSchedules(prev => {
+          const newMap = new Map(prev);
+          if (!newMap.has(response.data.medicationId)) {
+            newMap.set(response.data.medicationId, response.data.currentSchedule);
+          }
+          return newMap;
+        });
       } else {
         // Optimize all medications
         const response = await api.post('/reminders/optimize-all', {
           userPreferences: getUserPreferences()
         });
         console.log('Response:', response);
-        setRecommendations(response.data?.medications || []);
+        const meds = response.data?.medications || [];
+        setRecommendations(meds);
+        // Store all original schedules ONLY for new medications
+        setOriginalSchedules(prev => {
+          const newMap = new Map(prev);
+          meds.forEach((med: MedicationSchedule) => {
+            if (!newMap.has(med.medicationId)) {
+              newMap.set(med.medicationId, med.currentSchedule);
+            }
+          });
+          return newMap;
+        });
       }
+      // Clear applied medications when generating new recommendations
+      setAppliedMedications(new Set());
       toast.success('AI schedule recommendations generated!');
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to generate AI recommendations';
@@ -78,14 +101,63 @@ export function AIScheduleOptimizer({ medicationId, onScheduleApplied }: Props) 
         times
       });
       toast.success('Schedule updated successfully!');
-      setSelectedMedication(medId);
-      if (onScheduleApplied) {
-        onScheduleApplied();
-      }
+      // Add to the set of applied medications
+      setAppliedMedications(prev => new Set(prev).add(medId));
+      // Don't refresh the page immediately - let user apply other schedules first
+      // Only refresh when they're done (close the recommendations)
     } catch (error) {
       toast.error('Failed to apply schedule');
       console.error(error);
     }
+  };
+
+  const closeRecommendations = () => {
+    setRecommendations([]);
+    setAppliedMedications(new Set()); // Clear applied medications
+    setOriginalSchedules(new Map()); // Clear original schedules
+    // Refresh the parent component after closing to show updated schedules
+    if (onScheduleApplied) {
+      onScheduleApplied();
+    }
+  };
+
+  const skipRecommendation = async (medId: string) => {
+    // If this medication was already applied, revert it
+    if (appliedMedications.has(medId)) {
+      const originalSchedule = originalSchedules.get(medId);
+      console.log(`Reverting medication ${medId} to original schedule:`, originalSchedule);
+      
+      if (originalSchedule && originalSchedule.length > 0) {
+        try {
+          // Use the revert endpoint that cleans up AI reminders and restores original ones
+          const response = await api.put('/reminders/revert-schedule', {
+            medicationId: medId,
+            times: originalSchedule,
+            cleanupReminders: true,
+            regenerateOriginal: true
+          });
+          const deletedCount = response.data?.deletedReminders || 0;
+          const createdCount = response.data?.createdReminders || 0;
+          console.log(`Revert result: deleted ${deletedCount}, created ${createdCount}`);
+          toast.success('Schedule and reminders reverted to original');
+        } catch (error) {
+          toast.error('Failed to revert schedule');
+          console.error('Error reverting schedule:', error);
+        }
+      } else {
+        console.warn('No original schedule found for medication:', medId);
+        toast.error('Could not find original schedule to revert to');
+      }
+      
+      // Remove from applied medications
+      setAppliedMedications(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(medId);
+        return newSet;
+      });
+    }
+    // Remove from recommendations
+    setRecommendations(prev => prev.filter(r => r.medicationId !== medId));
   };
 
   const formatTime = (time: string) => {
@@ -135,7 +207,7 @@ export function AIScheduleOptimizer({ medicationId, onScheduleApplied }: Props) 
               >
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium">{med.medicationName}</h4>
-                  {selectedMedication === med.medicationId && (
+                  {appliedMedications.has(med.medicationId) && (
                     <Badge variant="default" className="gap-1">
                       <Check className="h-3 w-3" />
                       Applied
@@ -190,7 +262,7 @@ export function AIScheduleOptimizer({ medicationId, onScheduleApplied }: Props) 
                   <Button
                     size="sm"
                     onClick={() => applySchedule(med.medicationId, med.recommendedSchedule.times)}
-                    disabled={selectedMedication === med.medicationId}
+                    disabled={appliedMedications.has(med.medicationId)}
                   >
                     <Check className="h-4 w-4 mr-1" />
                     Apply Schedule
@@ -198,19 +270,22 @@ export function AIScheduleOptimizer({ medicationId, onScheduleApplied }: Props) 
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setRecommendations([])}
+                    onClick={() => skipRecommendation(med.medicationId)}
                   >
                     <X className="h-4 w-4 mr-1" />
-                    Cancel
+                    {appliedMedications.has(med.medicationId) ? 'Undo' : 'Skip'}
                   </Button>
                 </div>
               </div>
             ))}
 
-            <div className="text-center pt-4">
+            <div className="flex justify-center gap-2 pt-4">
               <Button variant="outline" onClick={generateSchedule}>
                 <Sparkles className="h-4 w-4 mr-2" />
                 Regenerate Recommendations
+              </Button>
+              <Button onClick={closeRecommendations}>
+                Done
               </Button>
             </div>
           </div>

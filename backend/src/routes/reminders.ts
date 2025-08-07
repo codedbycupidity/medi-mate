@@ -5,6 +5,11 @@ import { authenticate } from '../middleware/auth';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
 import { generateOptimalSchedule, optimizeExistingSchedule } from '../services/aiScheduler';
+import { 
+  markOverdueRemindersAsMissed, 
+  generateRemindersForUser, 
+  getAdherenceStats 
+} from '../services/reminderService';
 
 const router = express.Router();
 
@@ -88,6 +93,9 @@ router.get('/', authenticate, catchAsync(async (req: AuthRequest, res: Response)
  * Get today's reminders for a user
  */
 router.get('/today', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
+  // First mark overdue reminders as missed
+  await markOverdueRemindersAsMissed();
+  
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date();
@@ -135,47 +143,16 @@ router.get('/upcoming', authenticate, catchAsync(async (req: AuthRequest, res: R
  */
 router.get('/stats', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
   const { startDate, endDate } = req.query;
-
-  const query: any = { userId: req.userId };
-
-  if (startDate || endDate) {
-    query.scheduledTime = {};
-    if (startDate) {
-      query.scheduledTime.$gte = new Date(startDate as string);
-    }
-    if (endDate) {
-      query.scheduledTime.$lte = new Date(endDate as string);
-    }
-  }
-
-  const stats = await Reminder.aggregate([
-    { $match: query },
-    {
-      $group: {
-        _id: '$status',
-        count: { $sum: 1 }
-      }
-    }
-  ]) as Array<{ _id: string; count: number }>;
-
-  const statsObj = stats.reduce((acc, stat) => {
-    acc[stat._id] = stat.count;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const total = Object.values(statsObj).reduce((sum, count) => sum + count, 0);
-  const adherenceRate = total > 0 ? (statsObj.taken || 0) / total * 100 : 0;
+  
+  const stats = await getAdherenceStats(
+    req.userId!,
+    startDate ? new Date(startDate as string) : undefined,
+    endDate ? new Date(endDate as string) : undefined
+  );
 
   res.json({
     success: true,
-    data: {
-      total,
-      taken: statsObj.taken || 0,
-      missed: statsObj.missed || 0,
-      skipped: statsObj.skipped || 0,
-      pending: statsObj.pending || 0,
-      adherenceRate: Math.round(adherenceRate * 10) / 10
-    }
+    data: stats
   });
 }));
 
@@ -250,6 +227,87 @@ router.post('/optimize-all', authenticate, catchAsync(async (req: AuthRequest, r
     data: {
       medications: optimizedSchedules,
       summary: `Optimized schedules for ${optimizedSchedules.length} medications`
+    }
+  });
+}));
+
+/**
+ * PUT /api/reminders/revert-schedule
+ * Revert medication schedule and clean up recently created reminders
+ */
+router.put('/revert-schedule', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
+  const { medicationId, times, cleanupReminders = true, regenerateOriginal = true } = req.body;
+
+  if (!medicationId || !times || !Array.isArray(times)) {
+    throw new AppError('Medication ID and times array are required', 400);
+  }
+
+  // Update the medication times back to original
+  const medication = await Medication.findOneAndUpdate(
+    {
+      _id: medicationId,
+      userId: req.userId
+    },
+    { times },
+    { new: true }
+  );
+
+  if (!medication) {
+    throw new AppError('Medication not found', 404);
+  }
+
+  let deletedCount = 0;
+  if (cleanupReminders) {
+    // Delete all future pending reminders for this medication
+    // This ensures we clean up any reminders created by the AI schedule
+    const now = new Date();
+    const result = await Reminder.deleteMany({
+      medicationId,
+      userId: req.userId,
+      status: 'pending',
+      scheduledTime: { $gte: now }
+    });
+    deletedCount = result.deletedCount || 0;
+    
+    console.log(`Deleted ${deletedCount} future reminders for medication ${medicationId}`);
+  }
+
+  // Regenerate reminders with the original schedule if requested
+  let createdCount = 0;
+  if (regenerateOriginal && times.length > 0) {
+    const today = new Date();
+    const newReminders = [];
+    
+    for (const time of times) {
+      const [hours, minutes] = time.split(':').map(Number);
+      const scheduledTime = new Date(today);
+      scheduledTime.setHours(hours, minutes, 0, 0);
+      
+      // If time has passed today, create for tomorrow
+      if (scheduledTime < new Date()) {
+        scheduledTime.setDate(scheduledTime.getDate() + 1);
+      }
+      
+      newReminders.push({
+        userId: req.userId,
+        medicationId: medication._id,
+        scheduledTime,
+        status: 'pending'
+      });
+    }
+    
+    const createdReminders = await Reminder.insertMany(newReminders);
+    createdCount = createdReminders.length;
+    console.log(`Created ${createdCount} reminders with original schedule for medication ${medicationId}`);
+  }
+
+  res.json({
+    success: true,
+    message: `Schedule reverted successfully${deletedCount > 0 ? `, ${deletedCount} AI reminders removed` : ''}${createdCount > 0 ? `, and ${createdCount} original reminders restored` : ''}`,
+    data: { 
+      medication, 
+      deletedReminders: deletedCount,
+      createdReminders: createdCount
     }
   });
 }));
@@ -347,57 +405,13 @@ router.get('/:id', authenticate, catchAsync(async (req: AuthRequest, res: Respon
  */
 router.post('/generate', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
   const { days = 7 } = req.body;
-
-  // Get all active medications for the user
-  const medications = await Medication.find({
-    userId: req.userId,
-    active: true
-  });
-
-  const reminders = [];
-  const now = new Date();
-
-  for (const medication of medications) {
-    // Generate reminders for the specified number of days
-    for (let day = 0; day < days; day++) {
-      const date = new Date(now);
-      date.setDate(date.getDate() + day);
-
-      // Generate reminders for each time slot
-      for (const time of medication.times) {
-        const [hours, minutes] = time.split(':').map(Number);
-        const scheduledTime = new Date(date);
-        scheduledTime.setHours(hours, minutes, 0, 0);
-
-        // Only create future reminders
-        if (scheduledTime > now) {
-          // Check if reminder already exists
-          const existingReminder = await Reminder.findOne({
-            userId: req.userId,
-            medicationId: medication._id,
-            scheduledTime
-          });
-
-          if (!existingReminder) {
-            reminders.push({
-              userId: req.userId,
-              medicationId: medication._id,
-              scheduledTime,
-              status: 'pending'
-            });
-          }
-        }
-      }
-    }
-  }
-
-  // Bulk create reminders
-  const createdReminders = await Reminder.insertMany(reminders);
+  
+  const result = await generateRemindersForUser(req.userId!, days);
 
   res.status(201).json({
     success: true,
-    message: `Generated ${createdReminders.length} reminders`,
-    data: createdReminders
+    message: `Generated ${result.created} reminders for ${result.medications} medications`,
+    data: result
   });
 }));
 
@@ -441,6 +455,31 @@ router.put('/:id', authenticate, catchAsync(async (req: AuthRequest, res: Respon
   res.json({
     success: true,
     data: updatedReminder
+  });
+}));
+
+/**
+ * DELETE /api/reminders/bulk
+ * Delete multiple reminders
+ */
+router.delete('/bulk', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
+  const { ids } = req.body;
+  
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    throw new AppError('Please provide an array of reminder IDs', 400);
+  }
+  
+  const result = await Reminder.deleteMany({
+    _id: { $in: ids },
+    userId: req.userId
+  });
+  
+  res.json({
+    success: true,
+    message: `${result.deletedCount} reminder(s) deleted successfully`,
+    data: {
+      deletedCount: result.deletedCount
+    }
   });
 }));
 

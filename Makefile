@@ -90,7 +90,7 @@ ps: status ## Alias for status
 health: ## Check health of all services
 	@echo "🏥 Health Checks:"
 	@curl -s http://localhost:3001/api/health >/dev/null 2>&1 && echo "✅ Backend: Healthy" || echo "❌ Backend: Not responding"
-	@curl -s http://localhost:3000 >/dev/null 2>&1 && echo "✅ Frontend: Running" || echo "❌ Frontend: Not responding"
+	@nc -zv localhost 3000 >/dev/null 2>&1 && echo "✅ Frontend: Running" || echo "❌ Frontend: Not responding"
 	@curl -s http://localhost >/dev/null 2>&1 && echo "✅ Nginx: Running" || echo "❌ Nginx: Not responding"
 
 .PHONY: logs

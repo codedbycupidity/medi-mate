@@ -11,19 +11,10 @@ RUN npm install --legacy-peer-deps
 # Copy source code
 COPY . .
 
-# Create symlinks for shared packages
-RUN mkdir -p /shared && mkdir -p /components
-
 EXPOSE 3000
 
 # Environment for hot reloading
 ENV CHOKIDAR_USEPOLLING=true
-ENV FAST_REFRESH=true
-ENV WDS_SOCKET_HOST=0.0.0.0
-
-# Copy entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Start React development server
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["npm", "start"]
