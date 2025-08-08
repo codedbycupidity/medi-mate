@@ -23,11 +23,13 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 import { Button } from "../ui/button"
 import { Input } from "@medimate/components"
-import { ChevronDown, Trash2 } from "lucide-react"
+import { ChevronDown, Trash2, Check, MoreVertical, AlertCircle } from "lucide-react"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -37,6 +39,8 @@ interface DataTableProps<TData, TValue> {
   onEditReminder?: (reminder: TData) => void
   onDeleteReminder?: (id: string) => void
   onBulkDelete?: (ids: string[]) => void
+  onBulkMarkAsTaken?: (ids: string[]) => void
+  onBulkMarkAsSkipped?: (ids: string[]) => void
 }
 
 export function DataTable<TData, TValue>({
@@ -47,6 +51,8 @@ export function DataTable<TData, TValue>({
   onEditReminder,
   onDeleteReminder,
   onBulkDelete,
+  onBulkMarkAsTaken,
+  onBulkMarkAsSkipped,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -78,36 +84,51 @@ export function DataTable<TData, TValue>({
     },
   })
 
-  const handleDeleteSelected = async () => {
+  const handleBulkAction = async (action: 'delete' | 'markTaken' | 'markSkipped') => {
     const selectedRows = table.getFilteredSelectedRowModel().rows
-    console.log('Selected rows:', selectedRows.length)
     if (selectedRows.length === 0) return
     
-    if (window.confirm(`Are you sure you want to delete ${selectedRows.length} reminder(s)?`)) {
-      // Collect all IDs for bulk deletion
-      const ids = selectedRows
-        .map(row => {
-          const reminder = row.original as any
-          console.log('Row data:', reminder)
-          return reminder._id
-        })
-        .filter((id): id is string => !!id)
-      
-      console.log('IDs to delete:', ids)
-      
-      if (onBulkDelete && ids.length > 0) {
-        // Use bulk delete if available
-        console.log('Using bulk delete')
-        await onBulkDelete(ids)
-      } else if (onDeleteReminder) {
-        // Fallback to individual deletion
-        console.log('Using individual deletion')
-        for (const id of ids) {
-          await onDeleteReminder(id)
+    const ids = selectedRows
+      .map(row => (row.original as any)._id)
+      .filter((id): id is string => !!id)
+    
+    if (action === 'delete') {
+      if (window.confirm(`Are you sure you want to delete ${selectedRows.length} reminder(s)?`)) {
+        if (onBulkDelete && ids.length > 0) {
+          await onBulkDelete(ids)
+        } else if (onDeleteReminder) {
+          for (const id of ids) {
+            await onDeleteReminder(id)
+          }
         }
+        setRowSelection({})
       }
-      // Clear selection after deletion
-      setRowSelection({})
+    } else if (action === 'markTaken') {
+      if (window.confirm(`Mark ${selectedRows.length} reminder(s) as taken?`)) {
+        if (onBulkMarkAsTaken && ids.length > 0) {
+          // Use bulk endpoint
+          await onBulkMarkAsTaken(ids)
+        } else if (onMarkAsTaken) {
+          // Fallback to individual calls
+          for (const id of ids) {
+            await onMarkAsTaken(id)
+          }
+        }
+        setRowSelection({})
+      }
+    } else if (action === 'markSkipped') {
+      if (window.confirm(`Mark ${selectedRows.length} reminder(s) as skipped?`)) {
+        if (onBulkMarkAsSkipped && ids.length > 0) {
+          // Use bulk endpoint
+          await onBulkMarkAsSkipped(ids)
+        } else if (onMarkAsSkipped) {
+          // Fallback to individual calls
+          for (const id of ids) {
+            await onMarkAsSkipped(id)
+          }
+        }
+        setRowSelection({})
+      }
     }
   }
 
@@ -123,14 +144,39 @@ export function DataTable<TData, TValue>({
           className="max-w-sm"
         />
         {table.getFilteredSelectedRowModel().rows.length > 0 && (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDeleteSelected}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete {table.getFilteredSelectedRowModel().rows.length} selected
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <MoreVertical className="h-4 w-4 mr-2" />
+                Actions ({table.getFilteredSelectedRowModel().rows.length} selected)
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem 
+                onClick={() => handleBulkAction('markTaken')}
+                className="cursor-pointer"
+              >
+                <Check className="h-4 w-4 mr-2 text-green-600" />
+                Mark as Taken
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => handleBulkAction('markSkipped')}
+                className="cursor-pointer"
+              >
+                <AlertCircle className="h-4 w-4 mr-2 text-yellow-600" />
+                Mark as Skipped
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => handleBulkAction('delete')}
+                className="text-destructive cursor-pointer"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Selected
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

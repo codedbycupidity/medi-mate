@@ -5,9 +5,10 @@ import { DataTable } from '../components/reminders/data-table'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@medimate/components'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
-import { Bell, Calendar, CheckCircle2, AlertCircle, Clock, Sparkles } from 'lucide-react'
+import { Bell, Calendar, CheckCircle2, AlertCircle, Clock, Sparkles, History } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
 import { AIScheduleOptimizer } from '../components/reminders/AIScheduleOptimizer'
 import { EditReminderDialog } from '../components/reminders/EditReminderDialog'
 
@@ -21,6 +22,7 @@ interface ReminderStats {
 }
 
 export default function RemindersPage() {
+  const navigate = useNavigate()
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [todayReminders, setTodayReminders] = useState<Reminder[]>([])
   const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>([])
@@ -43,9 +45,12 @@ export default function RemindersPage() {
       setLoading(true)
       
       // Fetch all reminders
+      // Get user's timezone offset in minutes
+      const timezoneOffset = new Date().getTimezoneOffset()
+      
       const [allResponse, todayResponse, upcomingResponse, statsResponse] = await Promise.all([
         api.get('/reminders?limit=50'),
-        api.get('/reminders/today'),
+        api.get(`/reminders/today?timezoneOffset=${timezoneOffset}`),
         api.get('/reminders/upcoming'),
         api.get('/reminders/stats')
       ])
@@ -135,6 +140,30 @@ export default function RemindersPage() {
     }
   }
 
+  // Bulk mark as taken
+  const bulkMarkAsTaken = async (ids: string[]) => {
+    try {
+      const response = await api.put('/reminders/bulk/taken', { ids })
+      toast.success(response.message || `${ids.length} reminder(s) marked as taken`)
+      await fetchReminders()
+    } catch (error) {
+      console.error('Error marking reminders as taken:', error)
+      toast.error('Failed to mark reminders as taken')
+    }
+  }
+
+  // Bulk mark as skipped
+  const bulkMarkAsSkipped = async (ids: string[]) => {
+    try {
+      const response = await api.put('/reminders/bulk/skipped', { ids })
+      toast.success(response.message || `${ids.length} reminder(s) marked as skipped`)
+      await fetchReminders()
+    } catch (error) {
+      console.error('Error marking reminders as skipped:', error)
+      toast.error('Failed to mark reminders as skipped')
+    }
+  }
+
   // Edit reminder
   const editReminder = (reminder: Reminder) => {
     setEditingReminder(reminder)
@@ -173,10 +202,16 @@ export default function RemindersPage() {
             Track and manage your medication schedule
           </p>
         </div>
-        <Button onClick={generateReminders}>
-          <Calendar className="mr-2 h-4 w-4" />
-          Generate Week
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => navigate('/reminders/history')} variant="outline">
+            <History className="mr-2 h-4 w-4" />
+            View History
+          </Button>
+          <Button onClick={generateReminders}>
+            <Calendar className="mr-2 h-4 w-4" />
+            Generate Week
+          </Button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -264,6 +299,8 @@ export default function RemindersPage() {
                 onEditReminder={editReminder}
                 onDeleteReminder={deleteReminder}
                 onBulkDelete={bulkDeleteReminders}
+                onBulkMarkAsTaken={bulkMarkAsTaken}
+                onBulkMarkAsSkipped={bulkMarkAsSkipped}
               />
             </TabsContent>
             
@@ -276,6 +313,8 @@ export default function RemindersPage() {
                 onEditReminder={editReminder}
                 onDeleteReminder={deleteReminder}
                 onBulkDelete={bulkDeleteReminders}
+                onBulkMarkAsTaken={bulkMarkAsTaken}
+                onBulkMarkAsSkipped={bulkMarkAsSkipped}
               />
             </TabsContent>
             
@@ -288,6 +327,8 @@ export default function RemindersPage() {
                 onEditReminder={editReminder}
                 onDeleteReminder={deleteReminder}
                 onBulkDelete={bulkDeleteReminders}
+                onBulkMarkAsTaken={bulkMarkAsTaken}
+                onBulkMarkAsSkipped={bulkMarkAsSkipped}
               />
             </TabsContent>
           </Tabs>

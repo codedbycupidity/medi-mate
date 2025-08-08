@@ -61,6 +61,7 @@ services:
       context: ./packages/web
       dockerfile: Dockerfile.dev
     container_name: medimate_frontend
+    command: npm run start:prod
     ports:
       - "3000:3000"
     environment:

@@ -96,9 +96,16 @@ router.get('/today', authenticate, catchAsync(async (req: AuthRequest, res: Resp
   // First mark overdue reminders as missed
   await markOverdueRemindersAsMissed();
   
-  const startOfDay = new Date();
+  // Get timezone offset from query params (default to EDT -4 hours)
+  const timezoneOffset = parseInt(req.query.timezoneOffset as string) || -240; // EDT is -240 minutes from UTC
+  
+  const now = new Date();
+  // Adjust for timezone
+  const localNow = new Date(now.getTime() - (timezoneOffset * 60 * 1000));
+  
+  const startOfDay = new Date(localNow);
   startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date();
+  const endOfDay = new Date(localNow);
   endOfDay.setHours(23, 59, 59, 999);
 
   const reminders = await Reminder.find({
@@ -134,6 +141,134 @@ router.get('/upcoming', authenticate, catchAsync(async (req: AuthRequest, res: R
   res.json({
     success: true,
     data: reminders
+  });
+}));
+
+/**
+ * GET /api/reminders/history
+ * Get reminder history with detailed filtering
+ */
+router.get('/history', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
+  const { 
+    startDate, 
+    endDate, 
+    medicationId,
+    status,
+    page = '1',
+    limit = '50',
+    groupBy = 'day' // day, week, month
+  } = req.query;
+
+  const query: any = { 
+    userId: req.userId,
+    status: { $in: ['taken', 'missed', 'skipped'] } // Only completed reminders
+  };
+
+  // Date range filter
+  if (startDate || endDate) {
+    query.scheduledTime = {};
+    if (startDate) {
+      query.scheduledTime.$gte = new Date(startDate as string);
+    }
+    if (endDate) {
+      const end = new Date(endDate as string);
+      end.setHours(23, 59, 59, 999);
+      query.scheduledTime.$lte = end;
+    }
+  } else {
+    // Default to last 30 days up to 7 days in future (to catch early-taken meds)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    query.scheduledTime = { 
+      $gte: thirtyDaysAgo,
+      $lte: sevenDaysFromNow
+    };
+  }
+
+  // Filter by medication
+  if (medicationId) {
+    query.medicationId = medicationId;
+  }
+
+  // Filter by status
+  if (status && status !== 'all') {
+    query.status = status;
+  }
+
+  const pageNum = parseInt(page as string);
+  const limitNum = parseInt(limit as string);
+  const skip = (pageNum - 1) * limitNum;
+
+  const [reminders, total, allRemindersForStats] = await Promise.all([
+    Reminder.find(query)
+      .populate('medicationId', 'name dosage unit')
+      .sort({ scheduledTime: -1 })
+      .skip(skip)
+      .limit(limitNum),
+    Reminder.countDocuments(query),
+    Reminder.find(query).select('status') // Get all reminders for accurate stats
+  ]);
+
+  // Calculate overall stats from ALL reminders (not just current page)
+  const overallStats = allRemindersForStats.reduce((acc: any, reminder: any) => {
+    acc.total++;
+    acc[reminder.status] = (acc[reminder.status] || 0) + 1;
+    return acc;
+  }, { total: 0, taken: 0, missed: 0, skipped: 0 });
+
+  // Group by time period if requested
+  let groupedData = {};
+  if (groupBy !== 'none') {
+    groupedData = reminders.reduce((acc: any, reminder: any) => {
+      const date = new Date(reminder.scheduledTime);
+      let key = '';
+      
+      if (groupBy === 'day') {
+        key = date.toISOString().split('T')[0];
+      } else if (groupBy === 'week') {
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay());
+        key = weekStart.toISOString().split('T')[0];
+      } else if (groupBy === 'month') {
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      }
+      
+      if (!acc[key]) {
+        acc[key] = {
+          date: key,
+          reminders: [],
+          stats: {
+            total: 0,
+            taken: 0,
+            missed: 0,
+            skipped: 0
+          }
+        };
+      }
+      
+      acc[key].reminders.push(reminder);
+      acc[key].stats.total++;
+      acc[key].stats[reminder.status]++;
+      
+      return acc;
+    }, {});
+  }
+
+  res.json({
+    success: true,
+    data: {
+      reminders,
+      grouped: groupedData,
+      stats: overallStats, // Include overall stats
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    }
   });
 }));
 
@@ -455,6 +590,70 @@ router.put('/:id', authenticate, catchAsync(async (req: AuthRequest, res: Respon
   res.json({
     success: true,
     data: updatedReminder
+  });
+}));
+
+/**
+ * PUT /api/reminders/bulk/taken
+ * Mark multiple reminders as taken
+ */
+router.put('/bulk/taken', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
+  const { ids } = req.body;
+  
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    throw new AppError('Please provide an array of reminder IDs', 400);
+  }
+  
+  const now = new Date();
+  const result = await Reminder.updateMany(
+    {
+      _id: { $in: ids },
+      userId: req.userId,
+      status: 'pending' // Only update pending reminders
+    },
+    {
+      status: 'taken',
+      takenAt: now
+    }
+  );
+  
+  res.json({
+    success: true,
+    message: `${result.modifiedCount} reminder(s) marked as taken`,
+    data: {
+      modifiedCount: result.modifiedCount
+    }
+  });
+}));
+
+/**
+ * PUT /api/reminders/bulk/skipped
+ * Mark multiple reminders as skipped
+ */
+router.put('/bulk/skipped', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
+  const { ids } = req.body;
+  
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    throw new AppError('Please provide an array of reminder IDs', 400);
+  }
+  
+  const result = await Reminder.updateMany(
+    {
+      _id: { $in: ids },
+      userId: req.userId,
+      status: 'pending' // Only update pending reminders
+    },
+    {
+      status: 'skipped'
+    }
+  );
+  
+  res.json({
+    success: true,
+    message: `${result.modifiedCount} reminder(s) marked as skipped`,
+    data: {
+      modifiedCount: result.modifiedCount
+    }
   });
 }));
 
