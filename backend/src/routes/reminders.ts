@@ -5,6 +5,7 @@ import { authenticate } from '../middleware/auth';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
 import { generateOptimalSchedule, optimizeExistingSchedule } from '../services/aiScheduler';
+import { generatePersonalizedInsights, AdherenceData } from '../services/aiInsights';
 import { 
   markOverdueRemindersAsMissed, 
   generateRemindersForUser, 
@@ -757,6 +758,189 @@ router.post('/:id/skip', authenticate, catchAsync(async (req: AuthRequest, res: 
   res.json({
     success: true,
     data: updatedReminder
+  });
+}));
+
+/**
+ * GET /api/reminders/ai-insights
+ * Get AI-powered personalized insights based on adherence data
+ */
+router.get('/ai-insights', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
+  const userId = req.userId;
+  const { timeRange = 'week' } = req.query;
+  
+  // Calculate date range
+  const endDate = new Date();
+  let startDate: Date;
+  
+  if (timeRange === 'week') {
+    startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } else if (timeRange === 'month') {
+    startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+  } else {
+    startDate = new Date(endDate.getTime() - 365 * 24 * 60 * 60 * 1000);
+  }
+
+  // Fetch reminders for the period
+  const reminders = await Reminder.find({
+    userId,
+    scheduledTime: { $gte: startDate, $lte: endDate }
+  }).populate('medicationId', 'name dosage unit');
+
+  // Calculate overall stats
+  let takenCount = 0;
+  let missedCount = 0;
+  let totalCount = reminders.length;
+  
+  reminders.forEach(reminder => {
+    if (reminder.status === 'taken') takenCount++;
+    else if (reminder.status === 'missed') missedCount++;
+  });
+
+  const overallAdherence = totalCount > 0 
+    ? Math.round((takenCount / totalCount) * 100)
+    : 0;
+
+  // Calculate medication-specific stats
+  const medicationMap = new Map();
+  
+  reminders.forEach(reminder => {
+    const medication = reminder.medicationId as any;
+    const medId = medication?._id?.toString() || 'unknown';
+    const medName = medication?.name || 'Unknown';
+    
+    if (!medicationMap.has(medId)) {
+      medicationMap.set(medId, {
+        name: medName,
+        takenDoses: 0,
+        missedDoses: 0,
+        totalDoses: 0
+      });
+    }
+    
+    const stats = medicationMap.get(medId);
+    stats.totalDoses++;
+    
+    if (reminder.status === 'taken') stats.takenDoses++;
+    else if (reminder.status === 'missed') stats.missedDoses++;
+  });
+
+  const medicationStats = Array.from(medicationMap.values()).map(stats => ({
+    name: stats.name,
+    adherenceRate: stats.totalDoses > 0 
+      ? Math.round((stats.takenDoses / stats.totalDoses) * 100)
+      : 0,
+    takenDoses: stats.takenDoses,
+    missedDoses: stats.missedDoses
+  }));
+
+  // Calculate time-based analysis
+  const timeSlots = {
+    morning: { taken: 0, total: 0 },
+    afternoon: { taken: 0, total: 0 },
+    evening: { taken: 0, total: 0 },
+    night: { taken: 0, total: 0 }
+  };
+
+  reminders.forEach(reminder => {
+    const hour = new Date(reminder.scheduledTime).getHours();
+    let slot: keyof typeof timeSlots;
+    
+    if (hour >= 6 && hour < 12) slot = 'morning';
+    else if (hour >= 12 && hour < 18) slot = 'afternoon';
+    else if (hour >= 18 && hour < 24) slot = 'evening';
+    else slot = 'night';
+
+    timeSlots[slot].total++;
+    if (reminder.status === 'taken') timeSlots[slot].taken++;
+  });
+
+  const timeAnalysis = {
+    morningAdherence: timeSlots.morning.total > 0 
+      ? Math.round((timeSlots.morning.taken / timeSlots.morning.total) * 100)
+      : 0,
+    afternoonAdherence: timeSlots.afternoon.total > 0
+      ? Math.round((timeSlots.afternoon.taken / timeSlots.afternoon.total) * 100)
+      : 0,
+    eveningAdherence: timeSlots.evening.total > 0
+      ? Math.round((timeSlots.evening.taken / timeSlots.evening.total) * 100)
+      : 0,
+    nightAdherence: timeSlots.night.total > 0
+      ? Math.round((timeSlots.night.taken / timeSlots.night.total) * 100)
+      : 0
+  };
+
+  // Calculate recent trends (last 7 days)
+  const sevenDaysAgo = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const recentReminders = reminders.filter(r => 
+    new Date(r.scheduledTime) >= sevenDaysAgo
+  );
+
+  const dailyMap = new Map();
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(endDate.getTime() - i * 24 * 60 * 60 * 1000);
+    const dateKey = date.toISOString().split('T')[0];
+    dailyMap.set(dateKey, { taken: 0, total: 0 });
+  }
+
+  recentReminders.forEach(reminder => {
+    const dateKey = new Date(reminder.scheduledTime).toISOString().split('T')[0];
+    if (dailyMap.has(dateKey)) {
+      const daily = dailyMap.get(dateKey);
+      daily.total++;
+      if (reminder.status === 'taken') daily.taken++;
+    }
+  });
+
+  const recentTrends = Array.from(dailyMap.entries())
+    .map(([date, stats]) => ({
+      date,
+      adherenceRate: stats.total > 0 
+        ? Math.round((stats.taken / stats.total) * 100)
+        : 0
+    }))
+    .reverse();
+
+  // Calculate streaks
+  let currentStreak = 0;
+  let longestStreak = 0;
+  let tempStreak = 0;
+  
+  recentTrends.forEach((day, index) => {
+    if (day.adherenceRate === 100 && day.adherenceRate > 0) {
+      tempStreak++;
+      if (index === recentTrends.length - 1) currentStreak = tempStreak;
+      longestStreak = Math.max(longestStreak, tempStreak);
+    } else if (day.adherenceRate > 0) {
+      tempStreak = 0;
+    }
+  });
+
+  // Prepare data for AI insights
+  const adherenceData: AdherenceData = {
+    overallAdherence,
+    currentStreak,
+    longestStreak,
+    missedCount,
+    takenCount,
+    totalReminders: totalCount,
+    medicationStats,
+    timeAnalysis,
+    recentTrends
+  };
+
+  // Get user name for personalization
+  const userName = req.user?.name || 'User';
+
+  // Generate AI insights
+  const aiInsights = await generatePersonalizedInsights(adherenceData, userName);
+
+  res.json({
+    success: true,
+    data: {
+      adherenceData,
+      aiInsights
+    }
   });
 }));
 
