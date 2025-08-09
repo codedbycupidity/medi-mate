@@ -34,9 +34,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     try {
       const response = await apiClient.post<LoginResponse>('/auth/login', formData);
       
-      // Store token
-      localStorage.setItem('authToken', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.data.user));
+      // Store token - response is now the direct data from backend
+      localStorage.setItem('authToken', response.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
       
       // Call success callback or navigate
       if (onSuccess) {

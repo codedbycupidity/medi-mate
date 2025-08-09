@@ -47,9 +47,9 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess }) => {
         password: formData.password,
       });
       
-      // Store token
-      localStorage.setItem('authToken', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.data.user));
+      // Store token - response is now the direct data from backend
+      localStorage.setItem('authToken', response.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
       
       // Call success callback or navigate
       if (onSuccess) {
