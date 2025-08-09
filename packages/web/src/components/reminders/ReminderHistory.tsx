@@ -226,26 +226,26 @@ export default function ReminderHistory() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'taken':
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />
+        return <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
       case 'missed':
-        return <XCircle className="h-4 w-4 text-red-600" />
+        return <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
       case 'skipped':
-        return <AlertCircle className="h-4 w-4 text-yellow-600" />
+        return <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
       default:
-        return <Clock className="h-4 w-4 text-gray-400" />
+        return <Clock className="h-4 w-4 text-gray-400 dark:text-gray-500" />
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'taken':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-400'
       case 'missed':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-400'
       case 'skipped':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-400'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-800 dark:bg-muted dark:text-muted-foreground'
     }
   }
 
@@ -438,11 +438,11 @@ export default function ReminderHistory() {
                       <Badge variant="outline" className="text-xs">
                         {group.stats.total} total
                       </Badge>
-                      <Badge className="bg-green-100 text-green-800 text-xs">
+                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 text-xs">
                         {group.stats.taken} taken
                       </Badge>
                       {group.stats.missed > 0 && (
-                        <Badge className="bg-red-100 text-red-800 text-xs">
+                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400 text-xs">
                           {group.stats.missed} missed
                         </Badge>
                       )}
@@ -453,7 +453,7 @@ export default function ReminderHistory() {
                     {group.reminders.map((reminder) => (
                       <div
                         key={reminder._id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-card rounded-lg"
                       >
                         <div className="flex items-center gap-3">
                           {getStatusIcon(reminder.status)}
@@ -487,7 +487,7 @@ export default function ReminderHistory() {
               {reminders.map((reminder) => (
                 <div
                   key={reminder._id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-card rounded-lg"
                 >
                   <div className="flex items-center gap-3">
                     {getStatusIcon(reminder.status)}
