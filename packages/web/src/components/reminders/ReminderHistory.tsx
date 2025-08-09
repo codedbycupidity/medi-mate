@@ -3,6 +3,7 @@ import { api } from '../../services/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@medimate/components'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
+import TakenBadge from './TakenBadge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import { 
   Select, 
@@ -236,16 +237,16 @@ export default function ReminderHistory() {
     }
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'taken':
-        return 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-400'
+        return <TakenBadge>{status}</TakenBadge>
       case 'missed':
-        return 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-400'
+        return <Badge variant="destructive">{status}</Badge>
       case 'skipped':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-400'
+        return <Badge variant="secondary">{status}</Badge>
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-muted dark:text-muted-foreground'
+        return <Badge variant="outline">{status}</Badge>
     }
   }
 
@@ -438,11 +439,11 @@ export default function ReminderHistory() {
                       <Badge variant="outline" className="text-xs">
                         {group.stats.total} total
                       </Badge>
-                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 text-xs">
+                      <TakenBadge className="text-xs">
                         {group.stats.taken} taken
-                      </Badge>
+                      </TakenBadge>
                       {group.stats.missed > 0 && (
-                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400 text-xs">
+                        <Badge variant="destructive" className="text-xs">
                           {group.stats.missed} missed
                         </Badge>
                       )}
@@ -467,9 +468,7 @@ export default function ReminderHistory() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge className={getStatusColor(reminder.status)}>
-                            {reminder.status}
-                          </Badge>
+                          {getStatusBadge(reminder.status)}
                           {reminder.takenAt && (
                             <span className="text-sm text-muted-foreground">
                               at {format(new Date(reminder.takenAt), 'h:mm a')}
@@ -501,9 +500,7 @@ export default function ReminderHistory() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className={getStatusColor(reminder.status)}>
-                      {reminder.status}
-                    </Badge>
+                    {getStatusBadge(reminder.status)}
                     {reminder.takenAt && (
                       <span className="text-sm text-muted-foreground">
                         Taken at {format(new Date(reminder.takenAt), 'h:mm a')}
