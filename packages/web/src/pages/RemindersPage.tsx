@@ -5,7 +5,7 @@ import { DataTable } from '../components/reminders/data-table'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@medimate/components'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
-import { Bell, Calendar, CheckCircle2, AlertCircle, Clock, Sparkles, History } from 'lucide-react'
+import { Bell, Calendar, CheckCircle2, AlertCircle, Clock, Sparkles, History, Plus } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
@@ -203,6 +203,10 @@ export default function RemindersPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button onClick={() => navigate('/reminders/create')} variant="outline">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Reminder
+          </Button>
           <Button onClick={() => navigate('/reminders/history')} variant="outline">
             <History className="mr-2 h-4 w-4" />
             View History

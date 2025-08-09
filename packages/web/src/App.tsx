@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import MedicationsPage from './pages/MedicationsPage';
 import RemindersPage from './pages/RemindersPage';
+import CreateReminderPage from './pages/CreateReminderPage';
 import ReminderHistory from './components/reminders/ReminderHistory';
 import { ThemeProvider } from './components/providers/theme-provider';
 import { NavBar } from './components/NavBar';
@@ -110,6 +111,16 @@ const App: React.FC = () => {
             <ProtectedRoute>
               <MainLayout>
                 <MedicationsPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reminders/create"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <CreateReminderPage />
               </MainLayout>
             </ProtectedRoute>
           }
