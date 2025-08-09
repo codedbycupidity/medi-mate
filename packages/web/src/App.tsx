@@ -7,6 +7,7 @@ import RemindersPage from './pages/RemindersPage';
 import CreateReminderPage from './pages/CreateReminderPage';
 import ReminderHistory from './components/reminders/ReminderHistory';
 import DashboardPage from './pages/DashboardPage';
+import AnalyticsPage from './pages/AnalyticsPage';
 import { ThemeProvider } from './components/providers/theme-provider';
 import { NavBar } from './components/NavBar';
 
@@ -14,7 +15,6 @@ import { NavBar } from './components/NavBar';
 const Profile: React.FC = () => <div className="p-8 text-center text-foreground">Profile</div>
 const Settings: React.FC = () => <div className="p-8 text-center text-foreground">Settings</div>
 const Calendar: React.FC = () => <div className="p-8 text-center text-foreground">Calendar</div>
-const Analytics: React.FC = () => <div className="p-8 text-center text-foreground">Analytics</div>
 const Notifications: React.FC = () => <div className="p-8 text-center text-foreground">Notifications</div>
 
 // Protected Route Component
@@ -160,7 +160,7 @@ const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <MainLayout>
-                <Analytics />
+                <AnalyticsPage />
               </MainLayout>
             </ProtectedRoute>
           }

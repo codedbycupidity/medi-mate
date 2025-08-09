@@ -26,11 +26,6 @@ const components: { title: string; href: string; description: string }[] = [
     description:
       "Add a new medication to your tracking list.",
   },
-  {
-    title: "Schedule",
-    href: "/medications/schedule",
-    description: "View your daily medication schedule.",
-  },
 ];
 
 const reminders: { title: string; href: string; description: string }[] = [
