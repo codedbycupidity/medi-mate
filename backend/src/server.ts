@@ -7,6 +7,7 @@ import connectDB from './config/database';
 import medicationRoutes from './routes/medications';
 import authRoutes from './routes/auth';
 import reminderRoutes from './routes/reminders';
+import notificationRoutes from './routes/notifications';
 import errorHandler from './middleware/errorHandler';
 import AppError from './utils/appError';
 import { initializeReminderGenerator, initializeReminderNotifier } from './jobs/reminderGenerator';
@@ -22,6 +23,11 @@ app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);
+    
+    // In development, allow all origins
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
     
     // Parse allowed origins from environment variable
     const allowedOrigins = process.env.ALLOWED_ORIGINS 
@@ -53,6 +59,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/medications', medicationRoutes);
 app.use('/api/reminders', reminderRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Handle undefined routes
 app.all('*', (req, _res, next) => {
@@ -65,8 +72,8 @@ app.use(errorHandler);
 // Connect to MongoDB
 connectDB().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 MediMate API running on port ${PORT}`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+    console.log(`MediMate API running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV}`);
     
     // Initialize background jobs
     initializeReminderGenerator();

@@ -21,6 +21,31 @@ interface AuthRequest extends Request {
 }
 
 /**
+ * GET /api/reminders/upcoming
+ * Get upcoming reminders within specified hours
+ */
+router.get('/upcoming', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
+  const { hours = '1' } = req.query;
+  const hoursAhead = parseInt(hours as string);
+  
+  const now = new Date();
+  const futureTime = new Date(now.getTime() + hoursAhead * 60 * 60 * 1000);
+  
+  const reminders = await Reminder.find({
+    userId: req.userId,
+    status: 'pending',
+    nextDue: {
+      $gte: now,
+      $lte: futureTime
+    }
+  })
+  .populate('medicationId', 'name dosage')
+  .sort('nextDue');
+  
+  res.json(reminders);
+}));
+
+/**
  * GET /api/reminders
  * Get all reminders for a user with optional filters
  */

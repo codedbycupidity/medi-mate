@@ -11,6 +11,7 @@ import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { AIScheduleOptimizer } from '../components/reminders/AIScheduleOptimizer'
 import { EditReminderDialog } from '../components/reminders/EditReminderDialog'
+import { useReminderNotifications } from '../hooks/useReminderNotifications'
 
 interface ReminderStats {
   total: number
@@ -23,6 +24,7 @@ interface ReminderStats {
 
 export default function RemindersPage() {
   const navigate = useNavigate()
+  const { markReminderTaken, snoozeReminder } = useReminderNotifications()
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [todayReminders, setTodayReminders] = useState<Reminder[]>([])
   const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>([])

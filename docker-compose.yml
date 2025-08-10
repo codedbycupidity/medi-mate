@@ -44,6 +44,9 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - PINECONE_API_KEY=${PINECONE_API_KEY}
       - PINECONE_ENVIRONMENT=${PINECONE_ENVIRONMENT}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - VAPID_EMAIL=${VAPID_EMAIL:-mailto:admin@medimate.com}
     volumes:
       - ./backend:/app
       - ./packages/shared:/shared
@@ -66,6 +69,7 @@ services:
       - "3000:3000"
     environment:
       - REACT_APP_API_URL=http://localhost:3001/api
+      - REACT_APP_VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
       - CHOKIDAR_USEPOLLING=true
     volumes:
       - ./packages/web:/app

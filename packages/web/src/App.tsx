@@ -12,6 +12,7 @@ import CalendarPage from './pages/CalendarPage';
 import ProfilePage from './pages/ProfilePage';
 import { ThemeProvider } from './components/providers/theme-provider';
 import { NavBar } from './components/NavBar';
+import notificationService from './services/notificationService';
 
 // Placeholder Components - implement these later
 const Settings: React.FC = () => <div className="p-8 text-center text-foreground">Settings</div>
@@ -76,6 +77,11 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const App: React.FC = () => {
+  useEffect(() => {
+    // Initialize notification service when app loads
+    notificationService.init().catch(console.error);
+  }, []);
+
   return (
     <ThemeProvider defaultTheme="dark">
       <Router>

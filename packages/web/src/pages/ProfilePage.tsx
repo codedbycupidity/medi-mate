@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
+import notificationService from '../services/notificationService'
 import { 
   UserCircle,
   Stethoscope,
@@ -138,9 +139,12 @@ export default function ProfilePage() {
     memberSince: ''
   })
 
+  const [browserNotificationStatus, setBrowserNotificationStatus] = useState<NotificationPermission>('default')
+
   useEffect(() => {
     fetchUserProfile()
     fetchUserStats()
+    initializeNotifications()
   }, [])
 
   const fetchUserProfile = async () => {
@@ -187,6 +191,22 @@ export default function ProfilePage() {
       setLoading(false)
     }
   }
+
+  const initializeNotifications = async () => {
+    await notificationService.init()
+    setBrowserNotificationStatus(notificationService.getPermissionStatus())
+  }
+
+  const handleRequestNotificationPermission = async () => {
+    const permission = await notificationService.requestPermission()
+    setBrowserNotificationStatus(permission)
+    if (permission === 'granted') {
+      toast.success('Desktop notifications enabled!')
+    } else if (permission === 'denied') {
+      toast.error('Desktop notifications blocked. Please enable them in your browser settings.')
+    }
+  }
+
 
   const fetchUserStats = async () => {
     try {
@@ -564,6 +584,41 @@ export default function ProfilePage() {
     <div className="bg-card rounded-lg p-6 shadow-sm">
       <h2 className="text-2xl font-bold mb-1">Notification Settings</h2>
       <p className="text-muted-foreground mb-6">Choose how you want to receive reminders</p>
+      
+      {/* Desktop Notification Permission */}
+      <div className="mb-6 p-4 border rounded-lg bg-muted/30">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="font-medium flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Desktop Notifications
+            </div>
+            <div className="text-sm text-muted-foreground mt-1">
+              {browserNotificationStatus === 'granted' 
+                ? 'Notifications are enabled for medication reminders'
+                : browserNotificationStatus === 'denied'
+                ? 'Notifications are blocked in browser settings'
+                : 'Enable notifications to receive medication reminders'}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {browserNotificationStatus !== 'granted' && (
+              <button
+                onClick={handleRequestNotificationPermission}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+              >
+                Enable
+              </button>
+            )}
+            {browserNotificationStatus === 'granted' && (
+              <div className="px-3 py-2 bg-success/20 text-success rounded-md flex items-center gap-2">
+                <Check className="h-5 w-5" />
+                <span className="text-sm">Enabled</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
       
       <div className="space-y-4">
         <div className="flex items-center justify-between p-4 border rounded-lg">
