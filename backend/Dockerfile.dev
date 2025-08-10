@@ -13,5 +13,6 @@ COPY . .
 
 EXPOSE 3001
 
-# Start with nodemon for hot reloading
-CMD ["npm", "run", "dev"]
+# Install dependencies again when container starts (in case of volume mount)
+# and then start with nodemon for hot reloading
+CMD npm install && npm run dev
