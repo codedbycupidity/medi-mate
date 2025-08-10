@@ -9,11 +9,11 @@ import ReminderHistory from './components/reminders/ReminderHistory';
 import DashboardPage from './pages/DashboardPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import CalendarPage from './pages/CalendarPage';
+import ProfilePage from './pages/ProfilePage';
 import { ThemeProvider } from './components/providers/theme-provider';
 import { NavBar } from './components/NavBar';
 
 // Placeholder Components - implement these later
-const Profile: React.FC = () => <div className="p-8 text-center text-foreground">Profile</div>
 const Settings: React.FC = () => <div className="p-8 text-center text-foreground">Settings</div>
 const Notifications: React.FC = () => <div className="p-8 text-center text-foreground">Notifications</div>
 
@@ -170,7 +170,7 @@ const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <MainLayout>
-                <Profile />
+                <ProfilePage />
               </MainLayout>
             </ProtectedRoute>
           }
