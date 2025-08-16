@@ -86,9 +86,9 @@ Overall Performance:
 - Missed Doses: ${adherenceData.missedCount}
 
 Medication-Specific Performance:
-${adherenceData.medicationStats.map(med => 
-  `- ${med.name}: ${med.adherenceRate}% adherence (${med.takenDoses} taken, ${med.missedDoses} missed)`
-).join('\n')}
+${adherenceData.medicationStats.map(med =>
+      `- ${med.name}: ${med.adherenceRate}% adherence (${med.takenDoses} taken, ${med.missedDoses} missed)`
+    ).join('\n')}
 
 Time-of-Day Analysis:
 - Morning (6am-12pm): ${adherenceData.timeAnalysis.morningAdherence}%
@@ -97,9 +97,9 @@ Time-of-Day Analysis:
 - Night (12am-6am): ${adherenceData.timeAnalysis.nightAdherence}%
 
 Recent Trend (last 7 days):
-${adherenceData.recentTrends.map(day => 
-  `- ${day.date}: ${day.adherenceRate}%`
-).join('\n')}
+${adherenceData.recentTrends.map(day =>
+      `- ${day.date}: ${day.adherenceRate}%`
+    ).join('\n')}
 
 Provide personalized insights considering:
 1. Patterns in the data (time of day, specific medications, trends)
@@ -127,7 +127,7 @@ Provide personalized insights considering:
     return JSON.parse(response) as AIInsight;
   } catch (error) {
     console.error('Error generating AI insights:', error);
-    
+
     // Fallback to basic insights if AI fails
     return generateFallbackInsights(adherenceData);
   }
@@ -149,7 +149,7 @@ function generateFallbackInsights(data: AdherenceData): AIInsight {
   if (data.overallAdherence >= 80) {
     insights.insights.strengths.push(`Excellent overall adherence rate of ${data.overallAdherence}%`);
   }
-  
+
   if (data.currentStreak > 3) {
     insights.insights.strengths.push(`You're on a ${data.currentStreak}-day streak!`);
   }
@@ -174,11 +174,11 @@ function generateFallbackInsights(data: AdherenceData): AIInsight {
     { name: 'evening', rate: data.timeAnalysis.eveningAdherence },
     { name: 'night', rate: data.timeAnalysis.nightAdherence }
   ];
-  
-  const worstTime = timeSlots.reduce((worst, current) => 
+
+  const worstTime = timeSlots.reduce((worst, current) =>
     current.rate < worst.rate ? current : worst
   );
-  
+
   if (worstTime.rate < 70) {
     insights.insights.recommendations.push(
       `Consider setting multiple alarms for ${worstTime.name} medications`

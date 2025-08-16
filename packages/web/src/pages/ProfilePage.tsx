@@ -11,29 +11,17 @@ import {
   X,
   Edit,
   Save,
-  User,
-  Mail,
-  Phone,
-  Calendar,
-  Clock,
-  Bell,
-  Shield,
-  Settings,
-  Check,
-  AlertCircle,
-  Heart,
-  Activity,
-  MapPin,
-  Languages,
-  Moon,
-  Sun,
-  Smartphone,
-  Globe,
   ChevronRight,
   ArrowLeft
 } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
+import {
+  PersonalInfoTab,
+  MedicalInfoTab,
+  NotificationsTab,
+  PreferencesTab
+} from '../components/profile'
 
 interface UserProfile {
   _id: string
@@ -326,523 +314,42 @@ export default function ProfilePage() {
   }
 
   const renderPersonalInfo = () => (
-    <div className="bg-card rounded-lg p-6 shadow-sm">
-      <h2 className="text-2xl font-bold mb-1">Personal Information</h2>
-      <p className="text-muted-foreground mb-6">Your basic account details</p>
-      
-      <div className="grid gap-6 md:grid-cols-2">
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            <User className="inline h-4 w-4 mr-2" />
-            Full Name
-          </label>
-          <input
-            type="text"
-            className="w-full px-3 py-2 border border-input rounded-md bg-background"
-            value={editedProfile.name}
-            onChange={(e) => setEditedProfile({ ...editedProfile, name: e.target.value })}
-            disabled={!editing}
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            <Mail className="inline h-4 w-4 mr-2" />
-            Email
-          </label>
-          <input
-            type="email"
-            className="w-full px-3 py-2 border border-input rounded-md bg-background"
-            value={editedProfile.email}
-            onChange={(e) => setEditedProfile({ ...editedProfile, email: e.target.value })}
-            disabled={!editing}
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            <Phone className="inline h-4 w-4 mr-2" />
-            Phone
-          </label>
-          <input
-            type="tel"
-            className="w-full px-3 py-2 border border-input rounded-md bg-background"
-            value={editedProfile.phone || ''}
-            onChange={(e) => setEditedProfile({ ...editedProfile, phone: e.target.value })}
-            disabled={!editing}
-            placeholder="+1 (555) 123-4567"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            <Calendar className="inline h-4 w-4 mr-2" />
-            Date of Birth
-          </label>
-          <input
-            type="date"
-            className="w-full px-3 py-2 border border-input rounded-md bg-background"
-            value={editedProfile.dateOfBirth || ''}
-            onChange={(e) => setEditedProfile({ ...editedProfile, dateOfBirth: e.target.value })}
-            disabled={!editing}
-          />
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <label className="block text-sm font-medium mb-2">
-          <MapPin className="inline h-4 w-4 mr-2" />
-          Address
-        </label>
-        <div className="grid gap-3">
-          <input
-            className="w-full px-3 py-2 border border-input rounded-md bg-background"
-            placeholder="Street Address"
-            value={editedProfile.address?.street || ''}
-            onChange={(e) => setEditedProfile({
-              ...editedProfile,
-              address: { ...editedProfile.address, street: e.target.value }
-            })}
-            disabled={!editing}
-          />
-          <div className="grid gap-3 md:grid-cols-3">
-            <input
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
-              placeholder="City"
-              value={editedProfile.address?.city || ''}
-              onChange={(e) => setEditedProfile({
-                ...editedProfile,
-                address: { ...editedProfile.address, city: e.target.value }
-              })}
-              disabled={!editing}
-            />
-            <input
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
-              placeholder="State"
-              value={editedProfile.address?.state || ''}
-              onChange={(e) => setEditedProfile({
-                ...editedProfile,
-                address: { ...editedProfile.address, state: e.target.value }
-              })}
-              disabled={!editing}
-            />
-            <input
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
-              placeholder="ZIP Code"
-              value={editedProfile.address?.zipCode || ''}
-              onChange={(e) => setEditedProfile({
-                ...editedProfile,
-                address: { ...editedProfile.address, zipCode: e.target.value }
-              })}
-              disabled={!editing}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+    <PersonalInfoTab
+      profile={profile}
+      editedProfile={editedProfile}
+      editing={editing}
+      onProfileChange={setEditedProfile}
+    />
   )
 
   const renderMedicalInfo = () => (
-    <div className="bg-card rounded-lg p-6 shadow-sm">
-      <h2 className="text-2xl font-bold mb-1">Medical Information</h2>
-      <p className="text-muted-foreground mb-6">Important health information for your safety</p>
-      
-      <div className="grid gap-6 md:grid-cols-2">
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            <Heart className="inline h-4 w-4 mr-2" />
-            Blood Type
-          </label>
-          <select
-            className="w-full px-3 py-2 border border-input rounded-md bg-background"
-            value={editedProfile.medicalInfo?.bloodType || ''}
-            onChange={(e) => setEditedProfile({
-              ...editedProfile,
-              medicalInfo: { ...editedProfile.medicalInfo, bloodType: e.target.value }
-            })}
-            disabled={!editing}
-          >
-            <option value="">Select blood type</option>
-            <option value="A+">A+</option>
-            <option value="A-">A-</option>
-            <option value="B+">B+</option>
-            <option value="B-">B-</option>
-            <option value="AB+">AB+</option>
-            <option value="AB-">AB-</option>
-            <option value="O+">O+</option>
-            <option value="O-">O-</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <label className="block text-sm font-medium mb-2">
-          <AlertCircle className="inline h-4 w-4 mr-2" />
-          Allergies
-        </label>
-        <textarea
-          className="w-full px-3 py-2 border border-input rounded-md bg-background min-h-[100px]"
-          placeholder="List any allergies (one per line)"
-          value={editedProfile.medicalInfo?.allergies?.join('\n') || ''}
-          onChange={(e) => setEditedProfile({
-            ...editedProfile,
-            medicalInfo: {
-              ...editedProfile.medicalInfo,
-              allergies: e.target.value.split('\n').filter(a => a.trim())
-            }
-          })}
-          disabled={!editing}
-        />
-      </div>
-
-      <div className="mt-6">
-        <label className="block text-sm font-medium mb-2">
-          <Activity className="inline h-4 w-4 mr-2" />
-          Medical Conditions
-        </label>
-        <textarea
-          className="w-full px-3 py-2 border border-input rounded-md bg-background min-h-[100px]"
-          placeholder="List any medical conditions (one per line)"
-          value={editedProfile.medicalInfo?.conditions?.join('\n') || ''}
-          onChange={(e) => setEditedProfile({
-            ...editedProfile,
-            medicalInfo: {
-              ...editedProfile.medicalInfo,
-              conditions: e.target.value.split('\n').filter(c => c.trim())
-            }
-          })}
-          disabled={!editing}
-        />
-      </div>
-
-      <div className="mt-6 pt-6 border-t">
-        <h3 className="font-medium mb-4">Emergency Contact</h3>
-        <div className="grid gap-4 md:grid-cols-3">
-          <div>
-            <label className="block text-sm font-medium mb-2">Contact Name</label>
-            <input
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
-              value={editedProfile.medicalInfo?.emergencyContact?.name || ''}
-              onChange={(e) => setEditedProfile({
-                ...editedProfile,
-                medicalInfo: {
-                  ...editedProfile.medicalInfo,
-                  emergencyContact: {
-                    ...editedProfile.medicalInfo?.emergencyContact,
-                    name: e.target.value
-                  }
-                }
-              })}
-              disabled={!editing}
-              placeholder="John Doe"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Contact Phone</label>
-            <input
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
-              value={editedProfile.medicalInfo?.emergencyContact?.phone || ''}
-              onChange={(e) => setEditedProfile({
-                ...editedProfile,
-                medicalInfo: {
-                  ...editedProfile.medicalInfo,
-                  emergencyContact: {
-                    ...editedProfile.medicalInfo?.emergencyContact,
-                    phone: e.target.value
-                  }
-                }
-              })}
-              disabled={!editing}
-              placeholder="+1 (555) 123-4567"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Relationship</label>
-            <input
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
-              value={editedProfile.medicalInfo?.emergencyContact?.relationship || ''}
-              onChange={(e) => setEditedProfile({
-                ...editedProfile,
-                medicalInfo: {
-                  ...editedProfile.medicalInfo,
-                  emergencyContact: {
-                    ...editedProfile.medicalInfo?.emergencyContact,
-                    relationship: e.target.value
-                  }
-                }
-              })}
-              disabled={!editing}
-              placeholder="Spouse, Parent, etc."
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+    <MedicalInfoTab
+      profile={profile}
+      editedProfile={editedProfile}
+      editing={editing}
+      onProfileChange={setEditedProfile}
+    />
   )
 
   const renderNotifications = () => (
-    <div className="bg-card rounded-lg p-6 shadow-sm">
-      <h2 className="text-2xl font-bold mb-1">Notification Settings</h2>
-      <p className="text-muted-foreground mb-6">Choose how you want to receive reminders</p>
-      
-      {/* Desktop Notification Permission */}
-      <div className="mb-6 p-4 border rounded-lg bg-muted/30">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="font-medium flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Desktop Notifications
-            </div>
-            <div className="text-sm text-muted-foreground mt-1">
-              {browserNotificationStatus === 'granted' 
-                ? 'Notifications are enabled for medication reminders'
-                : browserNotificationStatus === 'denied'
-                ? 'Notifications are blocked in browser settings'
-                : 'Enable notifications to receive medication reminders'}
-            </div>
-          </div>
-          <div className="flex gap-2">
-            {browserNotificationStatus !== 'granted' && (
-              <button
-                onClick={handleRequestNotificationPermission}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-              >
-                Enable
-              </button>
-            )}
-            {browserNotificationStatus === 'granted' && (
-              <div className="px-3 py-2 bg-success/20 text-success rounded-md flex items-center gap-2">
-                <Check className="h-5 w-5" />
-                <span className="text-sm">Enabled</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-      
-      <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 border rounded-lg">
-          <div>
-            <div className="font-medium">Email Notifications</div>
-            <div className="text-sm text-muted-foreground">Receive medication reminders via email</div>
-          </div>
-          <button
-            className={`px-3 py-1 rounded-md ${notificationSettings.email ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
-            onClick={() => setNotificationSettings({
-              ...notificationSettings,
-              email: !notificationSettings.email
-            })}
-          >
-            {notificationSettings.email ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between p-4 border rounded-lg">
-          <div>
-            <div className="font-medium">SMS Notifications</div>
-            <div className="text-sm text-muted-foreground">Get text message reminders</div>
-          </div>
-          <button
-            className={`px-3 py-1 rounded-md ${notificationSettings.sms ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
-            onClick={() => setNotificationSettings({
-              ...notificationSettings,
-              sms: !notificationSettings.sms
-            })}
-          >
-            {notificationSettings.sms ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between p-4 border rounded-lg">
-          <div>
-            <div className="font-medium">Push Notifications</div>
-            <div className="text-sm text-muted-foreground">Browser push notifications</div>
-          </div>
-          <button
-            className={`px-3 py-1 rounded-md ${notificationSettings.push ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
-            onClick={() => setNotificationSettings({
-              ...notificationSettings,
-              push: !notificationSettings.push
-            })}
-          >
-            {notificationSettings.push ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-6 pt-6 border-t">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              <Clock className="inline h-4 w-4 mr-2" />
-              Reminder Advance Time
-            </label>
-            <select
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
-              value={notificationSettings.reminderAdvance}
-              onChange={(e) => setNotificationSettings({
-                ...notificationSettings,
-                reminderAdvance: parseInt(e.target.value)
-              })}
-            >
-              <option value="5">5 minutes before</option>
-              <option value="10">10 minutes before</option>
-              <option value="15">15 minutes before</option>
-              <option value="30">30 minutes before</option>
-              <option value="60">1 hour before</option>
-            </select>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium">Daily Summary</div>
-              <div className="text-sm text-muted-foreground">Receive a daily medication summary</div>
-            </div>
-            <button
-              className={`px-3 py-1 rounded-md ${notificationSettings.dailySummary ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
-              onClick={() => setNotificationSettings({
-                ...notificationSettings,
-                dailySummary: !notificationSettings.dailySummary
-              })}
-            >
-              {notificationSettings.dailySummary ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium">Weekly Report</div>
-              <div className="text-sm text-muted-foreground">Get weekly adherence reports</div>
-            </div>
-            <button
-              className={`px-3 py-1 rounded-md ${notificationSettings.weeklyReport ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
-              onClick={() => setNotificationSettings({
-                ...notificationSettings,
-                weeklyReport: !notificationSettings.weeklyReport
-              })}
-            >
-              {notificationSettings.weeklyReport ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <button
-          onClick={handleSaveNotifications}
-          disabled={saving}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
-        >
-          <Save className="inline h-4 w-4 mr-2" />
-          {saving ? 'Saving...' : 'Save Notification Settings'}
-        </button>
-      </div>
-    </div>
+    <NotificationsTab
+      notificationSettings={notificationSettings}
+      onSettingsChange={setNotificationSettings}
+      onSave={handleSaveNotifications}
+      saving={saving}
+      browserNotificationStatus={browserNotificationStatus}
+      onRequestPermission={handleRequestNotificationPermission}
+    />
   )
 
   const renderPreferences = () => (
-    <div className="bg-card rounded-lg p-6 shadow-sm">
-      <h2 className="text-2xl font-bold mb-1">Preferences</h2>
-      <p className="text-muted-foreground mb-6">Customize your app experience</p>
-      
-      <div className="grid gap-6 md:grid-cols-2">
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            <Languages className="inline h-4 w-4 mr-2" />
-            Language
-          </label>
-          <select
-            className="w-full px-3 py-2 border border-input rounded-md bg-background"
-            value={editedProfile.preferences?.language || 'en'}
-            onChange={(e) => setEditedProfile({
-              ...editedProfile,
-              preferences: { ...editedProfile.preferences, language: e.target.value }
-            })}
-            disabled={!editing}
-          >
-            <option value="en">English</option>
-            <option value="es">Español</option>
-            <option value="fr">Français</option>
-            <option value="de">Deutsch</option>
-            <option value="zh">中文</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            <Globe className="inline h-4 w-4 mr-2" />
-            Timezone
-          </label>
-          <select
-            className="w-full px-3 py-2 border border-input rounded-md bg-background"
-            value={editedProfile.preferences?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
-            onChange={(e) => setEditedProfile({
-              ...editedProfile,
-              preferences: { ...editedProfile.preferences, timezone: e.target.value }
-            })}
-            disabled={!editing}
-          >
-            <option value="America/New_York">Eastern Time</option>
-            <option value="America/Chicago">Central Time</option>
-            <option value="America/Denver">Mountain Time</option>
-            <option value="America/Los_Angeles">Pacific Time</option>
-            <option value="Europe/London">London</option>
-            <option value="Europe/Paris">Paris</option>
-            <option value="Asia/Tokyo">Tokyo</option>
-            <option value="Australia/Sydney">Sydney</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <label className="block text-sm font-medium mb-3">Theme</label>
-        <p className="text-sm text-muted-foreground mb-3">Choose your preferred color scheme</p>
-        <div className="grid grid-cols-3 gap-3">
-          <button
-            className={`px-4 py-2 border rounded-md ${editedProfile.preferences?.theme === 'light' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
-            onClick={() => handleThemeChange('light')}
-            disabled={!editing}
-          >
-            <Sun className="inline h-4 w-4 mr-2" />
-            Light
-          </button>
-          <button
-            className={`px-4 py-2 border rounded-md ${editedProfile.preferences?.theme === 'dark' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
-            onClick={() => handleThemeChange('dark')}
-            disabled={!editing}
-          >
-            <Moon className="inline h-4 w-4 mr-2" />
-            Dark
-          </button>
-          <button
-            className={`px-4 py-2 border rounded-md ${editedProfile.preferences?.theme === 'system' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
-            onClick={() => handleThemeChange('system')}
-            disabled={!editing}
-          >
-            <Smartphone className="inline h-4 w-4 mr-2" />
-            System
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-6 pt-6 border-t">
-        <h3 className="font-medium mb-4">Privacy & Security</h3>
-        <div className="space-y-3">
-          <button className="w-full px-4 py-2 border rounded-md text-left hover:bg-muted">
-            <Shield className="inline h-4 w-4 mr-2" />
-            Change Password
-          </button>
-          <button className="w-full px-4 py-2 border rounded-md text-left hover:bg-muted">
-            <Settings className="inline h-4 w-4 mr-2" />
-            Export Data
-          </button>
-          <button className="w-full px-4 py-2 border rounded-md text-left hover:bg-destructive/10 text-destructive">
-            <AlertCircle className="inline h-4 w-4 mr-2" />
-            Delete Account
-          </button>
-        </div>
-      </div>
-    </div>
+    <PreferencesTab
+      profile={profile}
+      editedProfile={editedProfile}
+      editing={editing}
+      onProfileChange={setEditedProfile}
+      onThemeChange={handleThemeChange}
+    />
   )
 
   return (

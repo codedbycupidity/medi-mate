@@ -33,11 +33,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
     try {
       const response = await apiClient.post<LoginResponse>('/auth/login', formData);
-      
+
       // Store token - response is now the direct data from backend
       localStorage.setItem('authToken', response.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      
+
       // Call success callback or navigate
       if (onSuccess) {
         onSuccess();
@@ -60,7 +60,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             <CardDescription>Enter your credentials to access your account</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-        
+
             {error && (
               <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-md">
                 {error}
