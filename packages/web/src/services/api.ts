@@ -71,9 +71,15 @@ class ApiClient {
       (response) => response,
       async (error) => {
         if (error.response?.status === 401) {
-          // Handle token refresh or redirect to login
-          localStorage.removeItem('authToken');
-          window.location.href = '/login';
+          // Don't redirect if already on auth pages
+          const currentPath = window.location.pathname;
+          const authPaths = ['/login', '/signup', '/register'];
+          
+          if (!authPaths.includes(currentPath)) {
+            // Only redirect to login if not already on an auth page
+            localStorage.removeItem('authToken');
+            window.location.href = '/login';
+          }
         }
         return Promise.reject(error);
       }
