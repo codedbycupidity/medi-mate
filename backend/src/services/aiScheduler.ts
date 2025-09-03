@@ -58,7 +58,7 @@ export async function generateOptimalSchedule(
     Generate the optimal reminder schedule for this medication.`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -157,7 +157,7 @@ export async function optimizeExistingSchedule(
     Optimize the schedule for all medications, considering potential interactions and timing requirements.`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }

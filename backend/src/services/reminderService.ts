@@ -5,14 +5,18 @@ import { startOfDay, addDays } from 'date-fns';
 /**
  * Mark overdue reminders as missed
  * Reminders that are more than 2 hours past their scheduled time are considered missed
+ * BUT: Don't mark as missed if the reminder was manually updated recently (within 5 minutes)
  */
 export async function markOverdueRemindersAsMissed(): Promise<number> {
   const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
   
   const result = await Reminder.updateMany(
     {
       status: 'pending',
-      scheduledTime: { $lt: twoHoursAgo }
+      scheduledTime: { $lt: twoHoursAgo },
+      // Don't mark as missed if it was recently updated (user might have manually changed it)
+      updatedAt: { $lt: fiveMinutesAgo }
     },
     {
       status: 'missed'

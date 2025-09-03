@@ -20,30 +20,7 @@ interface AuthRequest extends Request {
   userId?: string;
 }
 
-/**
- * GET /api/reminders/upcoming
- * Get upcoming reminders within specified hours
- */
-router.get('/upcoming', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
-  const { hours = '1' } = req.query;
-  const hoursAhead = parseInt(hours as string);
-  
-  const now = new Date();
-  const futureTime = new Date(now.getTime() + hoursAhead * 60 * 60 * 1000);
-  
-  const reminders = await Reminder.find({
-    userId: req.userId,
-    status: 'pending',
-    nextDue: {
-      $gte: now,
-      $lte: futureTime
-    }
-  })
-  .populate('medicationId', 'name dosage')
-  .sort('nextDue');
-  
-  res.json(reminders);
-}));
+// Removed duplicate /upcoming route - see the proper one below
 
 /**
  * GET /api/reminders
@@ -122,17 +99,21 @@ router.get('/today', authenticate, catchAsync(async (req: AuthRequest, res: Resp
   // First mark overdue reminders as missed
   await markOverdueRemindersAsMissed();
   
-  // Get timezone offset from query params (default to EDT -4 hours)
-  const timezoneOffset = parseInt(req.query.timezoneOffset as string) || -240; // EDT is -240 minutes from UTC
+  // Get timezone offset from query params (in minutes from UTC)
+  const timezoneOffset = req.query.timezoneOffset ? parseInt(req.query.timezoneOffset as string) : 240;
   
   const now = new Date();
-  // Adjust for timezone
-  const localNow = new Date(now.getTime() - (timezoneOffset * 60 * 1000));
   
-  const startOfDay = new Date(localNow);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(localNow);
-  endOfDay.setHours(23, 59, 59, 999);
+  // Create start of day in user's local time, then convert to UTC
+  const localMidnight = new Date(now);
+  localMidnight.setHours(0, 0, 0, 0);
+  // Add timezone offset to get UTC time (if user is at UTC-4, we add 4 hours)
+  const startOfDay = new Date(localMidnight.getTime() + (timezoneOffset * 60 * 1000));
+  
+  const localEndOfDay = new Date(now);
+  localEndOfDay.setHours(23, 59, 59, 999);
+  // Add timezone offset to get UTC time
+  const endOfDay = new Date(localEndOfDay.getTime() + (timezoneOffset * 60 * 1000));
 
   const reminders = await Reminder.find({
     userId: req.userId,
@@ -149,26 +130,55 @@ router.get('/today', authenticate, catchAsync(async (req: AuthRequest, res: Resp
 
 /**
  * GET /api/reminders/upcoming
- * Get upcoming reminders (next 24 hours)
+ * Get upcoming reminders (pending reminders from today and next 24 hours)
  */
-router.get('/upcoming', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
-  const now = new Date();
-  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+router.get('/upcoming', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
 
-  const reminders = await Reminder.find({
-    userId: req.userId,
-    scheduledTime: { $gte: now, $lte: tomorrow },
-    status: 'pending'
-  })
-    .populate('medicationId', 'name dosage unit instructions')
-    .sort({ scheduledTime: 1 })
-    .limit(10);
+    console.log('Upcoming endpoint called for user:', req.userId);
+    console.log('Time ranges:', {
+      now: now.toISOString(),
+      tomorrow: tomorrow.toISOString(),
+      startOfToday: startOfToday.toISOString()
+    });
 
-  res.json({
-    success: true,
-    data: reminders
-  });
-}));
+    // Get ALL pending reminders (regardless of time)
+    // Since pending means not yet acted upon, they should all be visible
+    const reminders = await Reminder.find({
+      userId: req.userId,
+      status: 'pending'
+    })
+      .populate('medicationId', 'name dosage unit instructions')
+      .sort({ scheduledTime: 1 })
+      .limit(20);
+
+    console.log(`Found ${reminders.length} upcoming reminders for user ${req.userId}`);
+    if (reminders.length > 0) {
+      console.log('First reminder:', {
+        id: reminders[0]._id,
+        scheduledTime: reminders[0].scheduledTime,
+        status: reminders[0].status
+      });
+    }
+
+    // Return in consistent format
+    res.json({
+      success: true,
+      data: reminders
+    });
+  } catch (error) {
+    console.error('Error in upcoming endpoint:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch upcoming reminders',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
 
 /**
  * GET /api/reminders/history
@@ -397,7 +407,7 @@ router.post('/optimize-all', authenticate, catchAsync(async (req: AuthRequest, r
  * Revert medication schedule and clean up recently created reminders
  */
 router.put('/revert-schedule', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
-  const { medicationId, times, cleanupReminders = true, regenerateOriginal = true } = req.body;
+  const { medicationId, times, cleanupReminders = true, regenerateOriginal = true, timezoneOffset = 0 } = req.body;
 
   if (!medicationId || !times || !Array.isArray(times)) {
     throw new AppError('Medication ID and times array are required', 400);
@@ -436,18 +446,49 @@ router.put('/revert-schedule', authenticate, catchAsync(async (req: AuthRequest,
   // Regenerate reminders with the original schedule if requested
   let createdCount = 0;
   if (regenerateOriginal && times.length > 0) {
-    const today = new Date();
+    const now = new Date();
     const newReminders = [];
     
     for (const time of times) {
       const [hours, minutes] = time.split(':').map(Number);
+      
+      // Same timezone calculation as apply-ai-schedule
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      
+      // Calculate the UTC hours/minutes for this local time
+      let utcHours = hours + Math.floor(timezoneOffset / 60);
+      let utcMinutes = minutes + (timezoneOffset % 60);
+      
+      // Handle minute overflow/underflow
+      if (utcMinutes >= 60) {
+        utcHours += 1;
+        utcMinutes -= 60;
+      } else if (utcMinutes < 0) {
+        utcHours -= 1;
+        utcMinutes += 60;
+      }
+      
+      // Handle hour overflow/underflow
+      let dayOffset = 0;
+      if (utcHours >= 24) {
+        dayOffset = 1;
+        utcHours -= 24;
+      } else if (utcHours < 0) {
+        dayOffset = -1;
+        utcHours += 24;
+      }
+      
       const scheduledTime = new Date(today);
-      scheduledTime.setHours(hours, minutes, 0, 0);
+      scheduledTime.setUTCDate(scheduledTime.getUTCDate() + dayOffset);
+      scheduledTime.setUTCHours(utcHours, utcMinutes, 0, 0);
       
       // If time has passed today, create for tomorrow
-      if (scheduledTime < new Date()) {
-        scheduledTime.setDate(scheduledTime.getDate() + 1);
+      if (scheduledTime < now) {
+        scheduledTime.setUTCDate(scheduledTime.getUTCDate() + 1);
       }
+      
+      console.log(`Reverting reminder for ${time} EDT -> ${scheduledTime.toISOString()} UTC`);
       
       newReminders.push({
         userId: req.userId,
@@ -478,11 +519,16 @@ router.put('/revert-schedule', authenticate, catchAsync(async (req: AuthRequest,
  * Apply AI-recommended schedule to a medication
  */
 router.put('/apply-ai-schedule', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
-  const { medicationId, times } = req.body;
+  console.log('Received apply-ai-schedule request body:', req.body);
+  const { medicationId, times, timezoneOffset = 0 } = req.body;
 
   if (!medicationId || !times || !Array.isArray(times)) {
     throw new AppError('Medication ID and times array are required', 400);
   }
+
+  console.log(`Applying AI schedule for medication ${medicationId}`);
+  console.log(`Times: ${JSON.stringify(times)}`);
+  console.log(`Timezone offset received: ${timezoneOffset} minutes (${timezoneOffset / -60} hours from UTC)`);
 
   // Update medication with new times
   const medication = await Medication.findOneAndUpdate(
@@ -507,18 +553,55 @@ router.put('/apply-ai-schedule', authenticate, catchAsync(async (req: AuthReques
   });
 
   // Generate new reminders with updated schedule
-  const today = new Date();
+  const now = new Date();
   
   const newReminders = [];
   for (const time of times) {
     const [hours, minutes] = time.split(':').map(Number);
+    
+    // The time string (e.g., "09:00") is in the user's local time
+    // timezoneOffset is minutes from UTC (negative for west, e.g., -240 for EDT means UTC-4)
+    // To convert local time to UTC, we SUBTRACT the offset (which adds the absolute value)
+    
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0); // Start of today in UTC
+    
+    // Calculate the UTC hours/minutes for this local time
+    // For 9:00 AM EDT (UTC-4), we need 13:00 UTC (9 + 4 = 13)
+    // timezoneOffset is positive for west of UTC (240 for EDT = 4 hours behind)
+    // So we ADD the hours: 9 + (240/60) = 9 + 4 = 13
+    let utcHours = hours + Math.floor(timezoneOffset / 60);
+    let utcMinutes = minutes + (timezoneOffset % 60);
+    
+    // Handle minute overflow/underflow
+    if (utcMinutes >= 60) {
+      utcHours += 1;
+      utcMinutes -= 60;
+    } else if (utcMinutes < 0) {
+      utcHours -= 1;
+      utcMinutes += 60;
+    }
+    
+    // Handle hour overflow/underflow (for crossing day boundaries)
+    let dayOffset = 0;
+    if (utcHours >= 24) {
+      dayOffset = 1;
+      utcHours -= 24;
+    } else if (utcHours < 0) {
+      dayOffset = -1;
+      utcHours += 24;
+    }
+    
     const scheduledTime = new Date(today);
-    scheduledTime.setHours(hours, minutes, 0, 0);
+    scheduledTime.setUTCDate(scheduledTime.getUTCDate() + dayOffset);
+    scheduledTime.setUTCHours(utcHours, utcMinutes, 0, 0);
     
     // If time has passed today, create for tomorrow
-    if (scheduledTime < new Date()) {
-      scheduledTime.setDate(scheduledTime.getDate() + 1);
+    if (scheduledTime < now) {
+      scheduledTime.setUTCDate(scheduledTime.getUTCDate() + 1);
     }
+    
+    console.log(`Creating reminder for ${time} EDT -> ${scheduledTime.toISOString()} UTC (offset: ${timezoneOffset})`);
     
     newReminders.push({
       userId: req.userId,
@@ -581,7 +664,14 @@ router.post('/generate', authenticate, catchAsync(async (req: AuthRequest, res: 
  * Update a reminder (mark as taken, missed, etc.)
  */
 router.put('/:id', authenticate, catchAsync(async (req: AuthRequest, res: Response) => {
-  const { status, notes, doseTaken } = req.body;
+  const { status, notes, doseTaken, scheduledTime } = req.body;
+  
+  console.log(`Updating reminder ${req.params.id} with:`, {
+    status,
+    notes,
+    doseTaken,
+    scheduledTime
+  });
 
   const reminder = await Reminder.findOne({
     _id: req.params.id,
@@ -591,12 +681,26 @@ router.put('/:id', authenticate, catchAsync(async (req: AuthRequest, res: Respon
   if (!reminder) {
     throw new AppError('Reminder not found', 404);
   }
+  
+  console.log(`Current reminder status: ${reminder.status}`);
 
-  // Update reminder
+  // Update reminder - ORDER MATTERS!
+  // Update scheduledTime first if provided
+  if (scheduledTime) {
+    reminder.scheduledTime = new Date(scheduledTime);
+    console.log(`Updated scheduledTime to: ${reminder.scheduledTime}`);
+  }
+
+  // Then update status - this MUST come after scheduledTime
+  // to ensure status isn't reset by any date-based logic
   if (status) {
     reminder.status = status;
+    console.log(`Setting status to: ${status}`);
     if (status === 'taken') {
       reminder.takenAt = new Date();
+    } else if (status === 'pending') {
+      // If resetting to pending, clear the takenAt timestamp
+      reminder.takenAt = undefined;
     }
   }
 
@@ -608,10 +712,21 @@ router.put('/:id', authenticate, catchAsync(async (req: AuthRequest, res: Respon
     reminder.doseTaken = doseTaken;
   }
 
+  // Force the status to be marked as modified to ensure it saves
+  reminder.markModified('status');
+  
+  console.log(`Before save - reminder status: ${reminder.status}`);
   await reminder.save();
+  console.log(`After save - reminder status: ${reminder.status}`);
 
   const updatedReminder = await Reminder.findById(reminder._id)
     .populate('medicationId', 'name dosage unit');
+  
+  // Verify the update was saved correctly
+  console.log(`Fetched updated reminder - status: ${updatedReminder?.status}, _id: ${updatedReminder?._id}`);
+  if (status && updatedReminder?.status !== status) {
+    console.error(`WARNING: Status mismatch! Expected: ${status}, Got: ${updatedReminder?.status}`);
+  }
 
   res.json({
     success: true,

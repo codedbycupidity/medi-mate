@@ -22,11 +22,12 @@ export const useReminderNotifications = () => {
       try {
         // Get reminders for the next hour
         const response = await api.get('/reminders/upcoming?hours=1');
-        const reminders: Reminder[] = response.data;
+        const reminders: Reminder[] = response.data || [];
 
         const now = new Date();
         
-        reminders.forEach((reminder) => {
+        if (reminders && Array.isArray(reminders)) {
+          reminders.forEach((reminder) => {
           if (!reminder.nextDue) return;
           
           const dueTime = new Date(reminder.nextDue);
@@ -52,6 +53,7 @@ export const useReminderNotifications = () => {
             }, delay);
           }
         });
+        }
 
         // Clean up old reminder keys (older than 1 hour)
         const oneHourAgo = now.getTime() - 3600000;

@@ -45,6 +45,12 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// Request logging middleware
+app.use((req: Request, _res: Response, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
 // Routes
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ 

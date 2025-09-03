@@ -96,10 +96,17 @@ export function AIScheduleOptimizer({ medicationId, onScheduleApplied }: Props) 
 
   const applySchedule = async (medId: string, times: string[]) => {
     try {
-      await api.put('/reminders/apply-ai-schedule', {
+      // Get user's timezone offset in minutes
+      const timezoneOffset = new Date().getTimezoneOffset();
+      console.log('Frontend timezone offset:', timezoneOffset, 'minutes from UTC');
+      console.log('Sending to backend:', { medicationId: medId, times, timezoneOffset });
+      
+      const response = await api.put('/reminders/apply-ai-schedule', {
         medicationId: medId,
-        times
+        times,
+        timezoneOffset // Send timezone offset to backend
       });
+      console.log('Backend response:', response);
       toast.success('Schedule updated successfully!');
       // Add to the set of applied medications
       setAppliedMedications(prev => new Set(prev).add(medId));
@@ -129,12 +136,16 @@ export function AIScheduleOptimizer({ medicationId, onScheduleApplied }: Props) 
       
       if (originalSchedule && originalSchedule.length > 0) {
         try {
+          // Get user's timezone offset in minutes
+          const timezoneOffset = new Date().getTimezoneOffset();
+          
           // Use the revert endpoint that cleans up AI reminders and restores original ones
           const response = await api.put('/reminders/revert-schedule', {
             medicationId: medId,
             times: originalSchedule,
             cleanupReminders: true,
-            regenerateOriginal: true
+            regenerateOriginal: true,
+            timezoneOffset // Send timezone offset to backend
           });
           const deletedCount = response.data?.deletedReminders || 0;
           const createdCount = response.data?.createdReminders || 0;

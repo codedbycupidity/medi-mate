@@ -26,6 +26,7 @@ export const authenticate = catchAsync(async (req: AuthRequest, _res: Response, 
   }
 
   if (!token) {
+    console.log('No token provided for', req.path);
     return next(new AppError('You are not logged in! Please log in to get access.', 401));
   }
 
@@ -35,11 +36,13 @@ export const authenticate = catchAsync(async (req: AuthRequest, _res: Response, 
   // Check if user still exists
   const user = await User.findById(decoded.userId);
   if (!user) {
+    console.log('User not found for token userId:', decoded.userId);
     return next(new AppError('The user belonging to this token does no longer exist.', 401));
   }
 
   // Grant access to protected route
   req.userId = (user as any)._id.toString();
   req.user = user;
+  console.log(`Auth successful for user ${req.userId} on ${req.path}`);
   next();
 });

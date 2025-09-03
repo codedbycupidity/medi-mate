@@ -57,9 +57,36 @@ export default function RemindersPage() {
         api.get('/reminders/stats')
       ])
 
-      setReminders(allResponse.data || [])
-      setTodayReminders(todayResponse.data || [])
-      setUpcomingReminders(upcomingResponse.data || [])
+      // Handle the nested data structure from backend
+      console.log('Raw responses:', {
+        all: allResponse.data,
+        today: todayResponse.data,
+        upcoming: upcomingResponse.data
+      })
+      
+      // Check if data is nested in success/data structure
+      const allData = Array.isArray(allResponse.data) ? allResponse.data : (allResponse.data?.data || [])
+      const todayData = Array.isArray(todayResponse.data) ? todayResponse.data : (todayResponse.data?.data || [])
+      const upcomingData = Array.isArray(upcomingResponse.data) ? upcomingResponse.data : (upcomingResponse.data?.data || [])
+      
+      console.log('Processed data:', {
+        all: allData,
+        today: todayData,
+        upcoming: upcomingData
+      })
+      
+      // Log a specific reminder to check its status
+      if (allData.length > 0) {
+        console.log('Sample reminder status check:', allData.map((r: any) => ({
+          id: r._id,
+          status: r.status,
+          medicationName: r.medicationId?.name
+        })).slice(0, 3))
+      }
+      
+      setReminders(allData)
+      setTodayReminders(todayData)
+      setUpcomingReminders(upcomingData)
       setStats(statsResponse.data || {
         total: 0,
         taken: 0,
@@ -79,6 +106,18 @@ export default function RemindersPage() {
   useEffect(() => {
     fetchReminders()
   }, [])
+
+  // Cleanup body styles when dialog state changes
+  useEffect(() => {
+    if (!editDialogOpen) {
+      // Ensure body styles are cleaned up when dialog closes
+      const cleanup = setTimeout(() => {
+        document.body.style.pointerEvents = ''
+        document.body.style.removeProperty('pointer-events')
+      }, 100)
+      return () => clearTimeout(cleanup)
+    }
+  }, [editDialogOpen])
 
   // Generate reminders for the week
   const generateReminders = async () => {
@@ -175,15 +214,42 @@ export default function RemindersPage() {
   // Update reminder
   const updateReminder = async (id: string, data: any) => {
     try {
-      await api.put(`/reminders/${id}`, data)
+      const response = await api.put(`/reminders/${id}`, data)
+      console.log('Update response:', response)
+      
+      // Find and log the specific reminder we just updated
+      if (response?.data) {
+        console.log('Updated reminder from response:', {
+          id: response.data._id,
+          status: response.data.status,
+          scheduledTime: response.data.scheduledTime
+        })
+      }
+      
       toast.success('Reminder updated successfully')
+      // Close dialog and clear state
       setEditDialogOpen(false)
       setEditingReminder(null)
-      fetchReminders()
+      // Force cleanup of body styles
+      setTimeout(() => {
+        document.body.style.pointerEvents = ''
+        document.body.style.removeProperty('pointer-events')
+      }, 0)
+      // Add small delay before fetching to ensure backend has processed the update
+      setTimeout(async () => {
+        await fetchReminders()
+      }, 100)
     } catch (error) {
       console.error('Error updating reminder:', error)
       toast.error('Failed to update reminder')
-      throw error
+      // Always close dialog on error to prevent blocking
+      setEditDialogOpen(false)
+      setEditingReminder(null)
+      // Force cleanup of body styles
+      setTimeout(() => {
+        document.body.style.pointerEvents = ''
+        document.body.style.removeProperty('pointer-events')
+      }, 0)
     }
   }
 

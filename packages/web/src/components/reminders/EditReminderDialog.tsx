@@ -43,7 +43,7 @@ export function EditReminderDialog({
   })
 
   useEffect(() => {
-    if (reminder) {
+    if (reminder && open) {
       const date = new Date(reminder.scheduledTime)
       setFormData({
         scheduledTime: format(date, 'HH:mm'),
@@ -53,7 +53,22 @@ export function EditReminderDialog({
         doseTaken: reminder.doseTaken || '',
       })
     }
-  }, [reminder])
+  }, [reminder, open])
+
+  useEffect(() => {
+    // Reset loading state when dialog closes
+    if (!open) {
+      setLoading(false)
+      // Ensure body pointer events are restored
+      document.body.style.pointerEvents = ''
+      document.body.style.removeProperty('pointer-events')
+    }
+    // Cleanup on unmount
+    return () => {
+      document.body.style.pointerEvents = ''
+      document.body.style.removeProperty('pointer-events')
+    }
+  }, [open])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,8 +79,12 @@ export function EditReminderDialog({
       
       // Combine date and time
       const [hours, minutes] = formData.scheduledTime.split(':')
-      const scheduledDateTime = new Date(formData.scheduledDate)
-      scheduledDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+      // Create date in local timezone
+      const year = parseInt(formData.scheduledDate.split('-')[0])
+      const month = parseInt(formData.scheduledDate.split('-')[1]) - 1 // Month is 0-indexed
+      const day = parseInt(formData.scheduledDate.split('-')[2])
+      
+      const scheduledDateTime = new Date(year, month, day, parseInt(hours), parseInt(minutes), 0, 0)
       
       await onSave(reminder._id, {
         scheduledTime: scheduledDateTime.toISOString(),
@@ -74,15 +93,17 @@ export function EditReminderDialog({
         doseTaken: formData.doseTaken || undefined,
       })
       
-      onOpenChange(false)
+      // Don't close here - let the parent handle it
     } catch (error) {
       console.error('Failed to update reminder:', error)
+      // Error is handled in parent component
     } finally {
       setLoading(false)
     }
   }
 
-  if (!reminder) return null
+  // Don't render dialog if no reminder is selected
+  if (!open || !reminder) return null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -167,7 +188,10 @@ export function EditReminderDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => {
+                setLoading(false)
+                onOpenChange(false)
+              }}
               disabled={loading}
             >
               Cancel
