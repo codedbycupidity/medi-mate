@@ -130,7 +130,7 @@ router.get('/today', authenticate, catchAsync(async (req: AuthRequest, res: Resp
 
 /**
  * GET /api/reminders/upcoming
- * Get upcoming reminders (pending reminders from today and next 24 hours)
+ * Get upcoming reminders (pending reminders within the next 24 hours)
  */
 router.get('/upcoming', authenticate, async (req: AuthRequest, res: Response) => {
   try {
@@ -146,15 +146,17 @@ router.get('/upcoming', authenticate, async (req: AuthRequest, res: Response) =>
       startOfToday: startOfToday.toISOString()
     });
 
-    // Get ALL pending reminders (regardless of time)
-    // Since pending means not yet acted upon, they should all be visible
+    // Get pending reminders within the next 24 hours
     const reminders = await Reminder.find({
       userId: req.userId,
-      status: 'pending'
+      status: 'pending',
+      scheduledTime: { 
+        $gte: now,
+        $lte: tomorrow 
+      }
     })
       .populate('medicationId', 'name dosage unit instructions')
-      .sort({ scheduledTime: 1 })
-      .limit(20);
+      .sort({ scheduledTime: 1 });
 
     console.log(`Found ${reminders.length} upcoming reminders for user ${req.userId}`);
     if (reminders.length > 0) {
@@ -201,7 +203,12 @@ router.get('/history', authenticate, catchAsync(async (req: AuthRequest, res: Re
   };
 
   // Date range filter
-  if (startDate || endDate) {
+  console.log('History endpoint - startDate:', startDate, 'endDate:', endDate);
+  if (startDate === 'all' || endDate === 'all') {
+    // If "all" is passed, don't filter by date at all
+    // This will get ALL historical data
+    console.log('Getting ALL historical data (no date filter)');
+  } else if (startDate || endDate) {
     query.scheduledTime = {};
     if (startDate) {
       query.scheduledTime.$gte = new Date(startDate as string);
@@ -237,6 +244,8 @@ router.get('/history', authenticate, catchAsync(async (req: AuthRequest, res: Re
   const limitNum = parseInt(limit as string);
   const skip = (pageNum - 1) * limitNum;
 
+  console.log('Final query for history:', JSON.stringify(query));
+  
   const [reminders, total, allRemindersForStats] = await Promise.all([
     Reminder.find(query)
       .populate('medicationId', 'name dosage unit')
@@ -246,6 +255,8 @@ router.get('/history', authenticate, catchAsync(async (req: AuthRequest, res: Re
     Reminder.countDocuments(query),
     Reminder.find(query).select('status') // Get all reminders for accurate stats
   ]);
+  
+  console.log('History results - total:', total, 'stats count:', allRemindersForStats.length);
 
   // Calculate overall stats from ALL reminders (not just current page)
   const overallStats = allRemindersForStats.reduce((acc: any, reminder: any) => {
@@ -253,6 +264,8 @@ router.get('/history', authenticate, catchAsync(async (req: AuthRequest, res: Re
     acc[reminder.status] = (acc[reminder.status] || 0) + 1;
     return acc;
   }, { total: 0, taken: 0, missed: 0, skipped: 0 });
+  
+  console.log('Overall stats calculated:', overallStats);
 
   // Group by time period if requested
   let groupedData = {};

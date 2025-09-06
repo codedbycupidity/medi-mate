@@ -2,13 +2,19 @@ import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
 import { IMedication } from '../models/Medication';
 
-const pinecone = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY!,
-});
+// Initialize Pinecone only if API key is available
+let pinecone: Pinecone | null = null;
+if (process.env.PINECONE_API_KEY) {
+  pinecone = new Pinecone({
+    apiKey: process.env.PINECONE_API_KEY,
+  });
+} else {
+  console.warn('PINECONE_API_KEY not found - vector store features will be disabled');
+}
 
-const openai = new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
 const INDEX_NAME = 'medications';
 const EMBEDDING_MODEL = 'text-embedding-3-small';
@@ -31,7 +37,7 @@ export class VectorStoreService {
   private initialized = false;
 
   async initialize() {
-    if (this.initialized) return;
+    if (this.initialized || !pinecone) return;
     
     try {
       const indexes = await pinecone.listIndexes();
@@ -64,6 +70,9 @@ export class VectorStoreService {
   }
 
   private async generateEmbedding(text: string): Promise<number[]> {
+    if (!openai) {
+      throw new Error('OpenAI API key not configured');
+    }
     try {
       const response = await openai.embeddings.create({
         model: EMBEDDING_MODEL,
@@ -156,6 +165,14 @@ export class VectorStoreService {
       instructions?: string;
     }
   ): Promise<DuplicateCheckResult> {
+    // Skip if Pinecone is not configured
+    if (!pinecone || !openai) {
+      return {
+        isDuplicate: false,
+        similarity: 0,
+      };
+    }
+    
     await this.initialize();
     
     try {
@@ -200,6 +217,11 @@ export class VectorStoreService {
   }
 
   async indexMedication(medication: IMedication): Promise<void> {
+    // Skip if Pinecone is not configured
+    if (!pinecone || !openai) {
+      return;
+    }
+    
     await this.initialize();
     
     try {
@@ -234,6 +256,11 @@ export class VectorStoreService {
   }
 
   async deleteMedicationFromIndex(medicationId: string, userId: string): Promise<void> {
+    // Skip if Pinecone is not configured
+    if (!pinecone) {
+      return;
+    }
+    
     await this.initialize();
     
     try {
