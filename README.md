@@ -46,7 +46,7 @@ medi-mate/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/medi-mate.git
+git clone https://github.com/codedbycupidity/medi-mate.git
 cd medi-mate
 ```
 
